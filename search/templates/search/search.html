@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h1 class="mb-4">Search Resources</h1>
+            
+            <!-- Search Form -->
+            <form method="GET" action="{% url 'search' %}" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search for resources..." value="{{ query }}" required>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+
+            <!-- Search Results -->
+            {% if query %}
+                <h2 class="mb-3">Search Results for "{{ query }}"</h2>
+                <p class="text-muted">Found {{ total_results }} result{{ total_results|pluralize }}</p>
+
+                {% if page_obj %}
+                    <div class="search-results">
+                        {% for resource in page_obj %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h3 class="card-title">
+                                            <a href="{% url 'resources:resource_detail' resource.pk %}" class="text-decoration-none">
+                                                {{ resource.title }}
+                                            </a>
+                                        </h3>
+                                    </div>
+                                    <p class="card-text">{{ resource.description|truncatewords:30 }}</p>
+                                    <div class="meta-info">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user"></i> {{ resource.author }}
+                                            <i class="fas fa-calendar-alt ml-2"></i> {{ resource.created_at|date:"M d, Y" }}
+                                            {% if resource.tags.all %}
+                                                <i class="fas fa-tags ml-2"></i>
+                                                {% for tag in resource.tags.all %}
+                                                    <span class="badge bg-secondary">{{ tag.name }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                            <nav aria-label="Search results pages">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        No results found for your search query.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center mt-5">
+                    <p class="lead">Enter your search query above to find resources.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

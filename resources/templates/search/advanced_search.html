@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Advanced Search - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Advanced Search</h1>
+
+    <div class="row">
+        <!-- Search Filters -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Search Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" id="search-form">
+                        {{ form|crispy }}
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        
+                        {% if request.GET %}
+                            <a href="{% url 'search:advanced_search' %}" class="btn btn-secondary w-100 mt-2">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Search Tips -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Search Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-info-circle text-info"></i>
+                            Use quotes for exact phrase matching
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-info-circle text-info"></i>
+                            Combine multiple filters for precise results
+                        </li>
+                        <li>
+                            <i class="fas fa-info-circle text-info"></i>
+                            Sort results by relevance, date, or rating
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div class="col-md-9">
+            {% if query %}
+                <div class="alert alert-info">
+                    <i class="fas fa-search"></i>
+                    Found {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }} 
+                    for {% if search_query %}"{{ search_query }}"{% else %}your search{% endif %}
+                </div>
+
+                {% if resources %}
+                    <div class="row">
+                        {% for resource in resources %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <a href="{% url 'resources:resource_detail' resource.pk %}" class="text-decoration-none">
+                                                {{ resource.title }}
+                                            </a>
+                                        </h5>
+                                        <p class="card-text">{{ resource.description|truncatewords:30 }}</p>
+                                        
+                                        {% if resource.tags.all %}
+                                            <div class="mb-3">
+                                                {% for tag in resource.tags.all %}
+                                                    <span class="badge bg-secondary">{{ tag.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="meta-info">
+                                            <small class="text-muted">
+                                                <i class="fas fa-user"></i> {{ resource.author }}
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-eye"></i> {{ resource.views }} views
+                                                {% if resource.rating %}
+                                                    <span class="mx-2">•</span>
+                                                    <i class="fas fa-star text-warning"></i> {{ resource.rating|floatformat:1 }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                Added {{ resource.created_at|timesince }} ago
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-folder"></i> {{ resource.category.name }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                        <nav aria-label="Search results pages" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                            Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">
+                                                {{ num }}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                            Next
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        No resources found matching your search criteria.
+                        Try adjusting your filters or search terms.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h3>Start Your Search</h3>
+                    <p class="text-muted">
+                        Use the filters on the left to find AI learning resources.
+                        <br>
+                        You can search by keywords, categories, tags, and more.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+.select2-container .select2-selection--multiple {
+    min-height: 38px;
+}
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #ced4da;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for multiple select fields
+    $('#id_categories, #id_tags').select2({
+        theme: 'classic',
+        placeholder: 'Select options...',
+        allowClear: true
+    });
+
+    // Initialize Select2 for single select fields
+    $('#id_resource_type, #id_sort_by').select2({
+        theme: 'classic',
+        minimumResultsForSearch: 10
+    });
+
+    // Auto-submit form when sort_by changes
+    $('#id_sort_by').change(function() {
+        $('#search-form').submit();
+    });
+});
+</script>
+{% endblock %} 

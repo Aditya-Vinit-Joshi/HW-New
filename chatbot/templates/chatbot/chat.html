@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Learning Assistant{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">AI Learning Assistant</h5>
+                    <button id="clearChat" class="btn btn-sm btn-light">Clear Chat</button>
+                </div>
+                <div class="card-body chat-container" style="height: 500px; overflow-y: auto;">
+                    <div id="chatMessages" class="d-flex flex-column gap-3">
+                        {% if not messages %}
+                        <div class="text-center text-muted my-4">
+                            <i class="fas fa-robot fa-3x mb-3"></i>
+                            <p>Welcome! I can help you find AI learning resources and answer questions about our content.</p>
+                            <p class="small">Try asking about:</p>
+                            <ul class="list-unstyled">
+                                <li>• Available learning resources</li>
+                                <li>• Specific AI/ML topics</li>
+                                <li>• Course recommendations</li>
+                                <li>• Resource categories</li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        {% for message in messages %}
+                        <div class="chat-message {% if message.message_type == 'user' %}user-message{% else %}bot-message{% endif %}">
+                            <div class="message-content">
+                                {{ message.content|linebreaks }}
+                            </div>
+                            <small class="text-muted">{{ message.timestamp|date:"g:i A" }}</small>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <input type="text" id="messageInput" class="form-control" placeholder="Ask about AI learning resources..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    padding: 1rem;
+    border-radius: 1rem;
+    max-width: 80%;
+    position: relative;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    align-self: flex-end;
+    margin-left: 20%;
+}
+
+.bot-message {
+    background-color: #f5f5f5;
+    align-self: flex-start;
+    margin-right: 20%;
+}
+
+.message-content {
+    margin-bottom: 0.5rem;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
+}
+
+.resource-suggestion {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.resource-suggestion h6 {
+    margin-bottom: 0.5rem;
+}
+
+.resource-meta {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.error-message {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+    align-self: center;
+    max-width: 80%;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const clearChatBtn = document.getElementById('clearChat');
+    
+    // Auto-scroll to bottom
+    function scrollToBottom() {
+        const container = document.querySelector('.chat-container');
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    scrollToBottom();
+    
+    // Format message content with Markdown-like syntax
+    function formatMessage(content) {
+        // Convert URLs to links
+        content = content.replace(
+            /\[([^\]]+)\]\(([^\)]+)\)/g,
+            '<a href="$2" target="_blank">$1</a>'
+        );
+        
+        // Convert resource suggestions to cards
+        content = content.replace(
+            /Resource: ([^\n]+)\nURL: ([^\n]+)\nType: ([^\n]+)\nCategory: ([^\n]+)/g,
+            '<div class="resource-suggestion">' +
+            '<h6><a href="$2" target="_blank">$1</a></h6>' +
+            '<div class="resource-meta">' +
+            '<span class="badge bg-primary">$3</span> ' +
+            '<span class="badge bg-secondary">$4</span>' +
+            '</div>' +
+            '</div>'
+        );
+        
+        return content;
+    }
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (!message) return;
+        
+        // Disable input and show loading state
+        messageInput.disabled = true;
+        const submitBtn = chatForm.querySelector('button[type="submit"]');
+        const originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Add user message
+                appendMessage(message, 'user');
+                // Add bot response
+                appendMessage(data.message, 'bot');
+            } else {
+                // Show error in chat
+                appendMessage(`Error: ${data.message}`, 'error');
+            }
+        } catch (error) {
+            // Show error in chat
+            appendMessage('Error: Unable to connect to the server. Please try again.', 'error');
+            console.error('Chat error:', error);
+        } finally {
+            // Reset form state
+            messageInput.value = '';
+            messageInput.disabled = false;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
+            messageInput.focus();
+        }
+    });
+    
+    // Handle clear chat
+    clearChatBtn.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to clear the chat history?')) return;
+        
+        try {
+            const response = await fetch('/chatbot/clear/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                chatMessages.innerHTML = `
+                    <div class="text-center text-muted my-4">
+                        <i class="fas fa-robot fa-3x mb-3"></i>
+                        <p>Welcome! I can help you find AI learning resources and answer questions about our content.</p>
+                        <p class="small">Try asking about:</p>
+                        <ul class="list-unstyled">
+                            <li>• Available learning resources</li>
+                            <li>• Specific AI/ML topics</li>
+                            <li>• Course recommendations</li>
+                            <li>• Resource categories</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            alert('Error clearing chat. Please try again.');
+        }
+    });
+    
+    // Helper function to append messages
+    function appendMessage(content, type) {
+        const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const formattedContent = type === 'bot' ? formatMessage(content) : content;
+        const messageHtml = `
+            <div class="chat-message ${type}-message">
+                <div class="message-content">
+                    ${formattedContent.replace(/\n/g, '<br>')}
+                </div>
+                <small class="text-muted">${time}</small>
+            </div>
+        `;
+        chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+        scrollToBottom();
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 

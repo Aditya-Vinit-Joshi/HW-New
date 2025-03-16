@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Resource - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'resources:resource_list' %}">Resources</a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {% if form.instance.pk %}Edit{% else %}Add{% endif %} Resource
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{% if form.instance.pk %}Edit{% else %}Add{% endif %} Resource</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.title|crispy }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.description|crispy }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.category|crispy }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.resource_type|crispy }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.url|crispy }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                {{ form.tags|crispy }}
+                                <small class="text-muted">Enter tags separated by commas</small>
+                            </div>
+                        </div>
+
+                        {% if form.instance.pk %}
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        {{ form.is_approved|crispy }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 
+                                    {% if form.instance.pk %}Save Changes{% else %}Add Resource{% endif %}
+                                </button>
+                                <a href="{% url 'resources:resource_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% if form.instance.pk %}
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Resource Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Created:</strong> {{ form.instance.created_at|date:"F j, Y" }}</p>
+                        <p><strong>Last Updated:</strong> {{ form.instance.updated_at|date:"F j, Y" }}</p>
+                        <p><strong>Views:</strong> {{ form.instance.views }}</p>
+                        {% if form.instance.rating %}
+                            <p>
+                                <strong>Rating:</strong> 
+                                <span class="text-warning">
+                                    <i class="fas fa-star"></i> {{ form.instance.rating|floatformat:1 }}
+                                </span>
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+.select2-container .select2-selection--multiple {
+    min-height: 38px;
+}
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #ced4da;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for tags
+    $('#id_tags').select2({
+        tags: true,
+        tokenSeparators: [','],
+        placeholder: 'Enter tags...',
+        allowClear: true
+    });
+
+    // Initialize Select2 for category and resource type
+    $('#id_category, #id_resource_type').select2({
+        theme: 'classic'
+    });
+});
+</script>
+{% endblock %} 

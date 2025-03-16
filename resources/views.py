@@ -1,0 +1,204 @@
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Avg
+from .models import Resource, Category, Comment, Rating
+from .forms import ResourceForm, CommentForm, RatingForm
+from django.http import JsonResponse
+
+def home(request):
+    featured_resources = Resource.objects.filter(is_approved=True).order_by('-views')[:6]
+    categories = Category.objects.all()
+    latest_resources = Resource.objects.filter(is_approved=True).order_by('-created_at')[:6]
+    
+    context = {
+        'featured_resources': featured_resources,
+        'categories': categories,
+        'latest_resources': latest_resources,
+    }
+    return render(request, 'resources/home.html', context)
+
+def resource_list(request):
+    resources = Resource.objects.filter(is_approved=True).order_by('-created_at')
+    paginator = Paginator(resources, 12)
+    page = request.GET.get('page')
+    resources = paginator.get_page(page)
+    
+    return render(request, 'resources/resource_list.html', {'resources': resources})
+
+def resource_detail(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    comments = resource.comments.all().order_by('-created_at')
+    rating_form = RatingForm()
+    comment_form = CommentForm()
+    
+    # Increment view count
+    resource.views += 1
+    resource.save()
+    
+    # Get average rating
+    avg_rating = resource.ratings.aggregate(Avg('rating'))['rating__avg']
+    
+    context = {
+        'resource': resource,
+        'comments': comments,
+        'rating_form': rating_form,
+        'comment_form': comment_form,
+        'avg_rating': avg_rating,
+    }
+    return render(request, 'resources/resource_detail.html', context)
+
+@login_required
+def resource_create(request):
+    if request.method == 'POST':
+        form = ResourceForm(request.POST)
+        if form.is_valid():
+            resource = form.save(commit=False)
+            resource.author = request.user
+            resource.save()
+            form.save_m2m()  # Save tags
+            messages.success(request, 'Resource submitted successfully! It will be reviewed by moderators.')
+            return redirect('resources:resource_detail', pk=resource.pk)
+    else:
+        form = ResourceForm()
+    
+    return render(request, 'resources/resource_form.html', {'form': form, 'action': 'Create'})
+
+@login_required
+def resource_edit(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.user != resource.author and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to edit this resource.')
+        return redirect('resources:resource_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = ResourceForm(request.POST, instance=resource)
+        if form.is_valid():
+            resource = form.save()
+            messages.success(request, 'Resource updated successfully!')
+            return redirect('resources:resource_detail', pk=resource.pk)
+    else:
+        form = ResourceForm(instance=resource)
+    
+    return render(request, 'resources/resource_form.html', {'form': form, 'action': 'Edit'})
+
+@login_required
+def resource_delete(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.user != resource.author and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to delete this resource.')
+        return redirect('resources:resource_detail', pk=pk)
+    
+    if request.method == 'POST':
+        resource.delete()
+        messages.success(request, 'Resource deleted successfully!')
+        return redirect('resources:resource_list')
+    
+    return render(request, 'resources/resource_confirm_delete.html', {'resource': resource})
+
+@login_required
+def add_comment(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.resource = resource
+            comment.author = request.user
+            comment.save()
+            messages.success(request, 'Comment added successfully!')
+        else:
+            messages.error(request, 'Error adding comment.')
+    
+    return redirect('resources:resource_detail', pk=pk)
+
+@login_required
+def rate_resource(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.method == 'POST':
+        form = RatingForm(request.POST)
+        if form.is_valid():
+            rating, created = Rating.objects.get_or_create(
+                resource=resource,
+                user=request.user,
+                defaults={'rating': form.cleaned_data['rating']}
+            )
+            if not created:
+                rating.rating = form.cleaned_data['rating']
+                rating.save()
+            messages.success(request, 'Rating submitted successfully!')
+        else:
+            messages.error(request, 'Error submitting rating.')
+    
+    return redirect('resources:resource_detail', pk=pk)
+
+@login_required
+def like_resource(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.user in resource.likes.all():
+        resource.likes.remove(request.user)
+        liked = False
+    else:
+        resource.likes.add(request.user)
+        liked = True
+    
+    return JsonResponse({'liked': liked, 'count': resource.likes.count()})
+
+@login_required
+def save_resource(request, pk):
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    if request.user in resource.saved_by.all():
+        request.user.saved_resources.remove(resource)
+        saved = False
+    else:
+        request.user.saved_resources.add(resource)
+        saved = True
+    
+    return JsonResponse({'saved': saved})
+
+def category_list(request):
+    categories = Category.objects.all()
+    return render(request, 'resources/category_list.html', {'categories': categories})
+
+def category_detail(request, slug):
+    category = get_object_or_404(Category, slug=slug)
+    resources = Resource.objects.filter(category=category, is_approved=True)
+    
+    # Filter by resource type
+    resource_type = request.GET.get('type')
+    if resource_type:
+        resources = resources.filter(resource_type=resource_type)
+    
+    # Sort resources
+    sort_by = request.GET.get('sort', '-created_at')
+    resources = resources.order_by(sort_by)
+    
+    # Pagination
+    paginator = Paginator(resources, 12)
+    page = request.GET.get('page')
+    resources = paginator.get_page(page)
+    
+    context = {
+        'category': category,
+        'resources': resources,
+        'resource_types': Resource.RESOURCE_TYPES,
+        'sort_by': sort_by,
+    }
+    return render(request, 'resources/category_detail.html', context)
+
+@login_required
+def my_resources(request):
+    resources = Resource.objects.filter(author=request.user).order_by('-created_at')
+    return render(request, 'resources/my_resources.html', {'resources': resources})
+
+@login_required
+def saved_resources(request):
+    resources = request.user.saved_resources.all().order_by('-created_at')
+    return render(request, 'resources/saved_resources.html', {'resources': resources})

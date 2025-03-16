@@ -1,0 +1,56 @@
+[
+    {
+        "model": "resources.category",
+        "pk": 1,
+        "fields": {
+            "name": "Machine Learning",
+            "description": "Resources related to machine learning algorithms, techniques, and applications",
+            "slug": "machine-learning"
+        }
+    },
+    {
+        "model": "resources.category",
+        "pk": 2,
+        "fields": {
+            "name": "Deep Learning",
+            "description": "Resources focused on neural networks, deep learning architectures, and frameworks",
+            "slug": "deep-learning"
+        }
+    },
+    {
+        "model": "resources.category",
+        "pk": 3,
+        "fields": {
+            "name": "Natural Language Processing",
+            "description": "Resources about text processing, language models, and NLP applications",
+            "slug": "natural-language-processing"
+        }
+    },
+    {
+        "model": "resources.category",
+        "pk": 4,
+        "fields": {
+            "name": "Computer Vision",
+            "description": "Resources covering image processing, object detection, and visual recognition",
+            "slug": "computer-vision"
+        }
+    },
+    {
+        "model": "resources.category",
+        "pk": 5,
+        "fields": {
+            "name": "Reinforcement Learning",
+            "description": "Resources about RL algorithms, environments, and applications",
+            "slug": "reinforcement-learning"
+        }
+    },
+    {
+        "model": "resources.category",
+        "pk": 6,
+        "fields": {
+            "name": "AI Ethics",
+            "description": "Resources discussing ethical considerations, bias, and responsible AI",
+            "slug": "ai-ethics"
+        }
+    }
+] 

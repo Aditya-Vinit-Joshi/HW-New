@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Learning Hub - Your Gateway to AI Education{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Hero Section -->
+    <div class="jumbotron text-center bg-primary text-white rounded p-5 mb-4">
+        <h1 class="display-4">Welcome to AI Learning Hub</h1>
+        <p class="lead">Your comprehensive platform for AI education and resources</p>
+        <div class="mt-4">
+            <form action="{% url 'search:search' %}" method="GET" class="d-flex justify-content-center">
+                <div class="input-group w-75">
+                    <input type="text" name="q" class="form-control form-control-lg" placeholder="Search for AI resources...">
+                    <button class="btn btn-light" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Featured Resources -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Featured Resources</h2>
+            <a href="{% url 'resources:resource_list' %}" class="btn btn-outline-primary">View All</a>
+        </div>
+        <div class="row">
+            {% for resource in featured_resources %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'resources:resource_detail' resource.pk %}" class="text-decoration-none">
+                                    {{ resource.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text">{{ resource.description|truncatewords:20 }}</p>
+                            <div class="meta-info">
+                                <small class="text-muted">
+                                    <i class="fas fa-eye"></i> {{ resource.views }} views
+                                    {% if resource.rating %}
+                                        <span class="ms-2">
+                                            <i class="fas fa-star text-warning"></i> {{ resource.rating|floatformat:1 }}
+                                        </span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ resource.author }}
+                                </small>
+                                <small class="text-muted">
+                                    {{ resource.created_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="mb-5">
+        <h2 class="mb-4">Browse by Category</h2>
+        <div class="row">
+            {% for category in categories %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h3 class="h5 card-title">
+                                <a href="{% url 'resources:category_detail' category.slug %}" class="text-decoration-none">
+                                    {{ category.name }}
+                                </a>
+                            </h3>
+                            <p class="card-text small text-muted">
+                                {{ category.description|truncatewords:10 }}
+                            </p>
+                            <span class="badge bg-primary">
+                                {{ category.resource_set.count }} resources
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Latest Resources -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Latest Resources</h2>
+            <a href="{% url 'resources:resource_list' %}?sort=latest" class="btn btn-outline-primary">View All</a>
+        </div>
+        <div class="row">
+            {% for resource in latest_resources %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'resources:resource_detail' resource.pk %}" class="text-decoration-none">
+                                    {{ resource.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text">{{ resource.description|truncatewords:20 }}</p>
+                            {% if resource.tags.all %}
+                                <div class="mb-2">
+                                    {% for tag in resource.tags.all %}
+                                        <span class="badge bg-secondary">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <small class="text-muted">
+                                Added {{ resource.created_at|timesince }} ago
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="text-center py-5 bg-light rounded">
+        <h2>Share Your Knowledge</h2>
+        <p class="lead">Have a valuable AI resource to share with the community?</p>
+        <a href="{% url 'resources:resource_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Submit a Resource
+        </a>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Smooth scroll for anchor links
+    $('a[href^="#"]').on('click', function(e) {
+        e.preventDefault();
+        $('html, body').animate({
+            scrollTop: $($(this).attr('href')).offset().top - 70
+        }, 500);
+    });
+});
+</script>
+{% endblock %} 
