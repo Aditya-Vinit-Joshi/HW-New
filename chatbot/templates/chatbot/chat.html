@@ -14,7 +14,18 @@
                 </div>
                 <div class="card-body chat-container" style="height: 500px; overflow-y: auto;">
                     <div id="chatMessages" class="d-flex flex-column gap-3">
-                        {% if not messages %}
+                        {% if messages %}
+                            {% for message in messages %}
+                            <div class="chat-message {% if message.message_type == 'user' %}user-message{% else %}bot-message{% endif %}">
+                                <div class="message-content">
+                                    {{ message.content|linebreaks }}
+                                </div>
+                                <small class="text-muted">
+                                    {{ message.timestamp|date:"g:i A" }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
                         <div class="text-center text-muted my-4">
                             <i class="fas fa-robot fa-3x mb-3"></i>
                             <p>Welcome! I can help you find AI learning resources and answer questions about our content.</p>
@@ -26,15 +37,6 @@
                                 <li>• Resource categories</li>
                             </ul>
                         </div>
-                        {% else %}
-                        {% for message in messages %}
-                        <div class="chat-message {% if message.message_type == 'user' %}user-message{% else %}bot-message{% endif %}">
-                            <div class="message-content">
-                                {{ message.content|linebreaks }}
-                            </div>
-                            <small class="text-muted">{{ message.timestamp|date:"g:i A" }}</small>
-                        </div>
-                        {% endfor %}
                         {% endif %}
                     </div>
                 </div>
@@ -127,23 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chatMessages');
     const clearChatBtn = document.getElementById('clearChat');
     
-    // Auto-scroll to bottom
     function scrollToBottom() {
         const container = document.querySelector('.chat-container');
         container.scrollTop = container.scrollHeight;
     }
     
     scrollToBottom();
-    
-    // Format message content with Markdown-like syntax
+
     function formatMessage(content) {
-        // Convert URLs to links
-        content = content.replace(
-            /\[([^\]]+)\]\(([^\)]+)\)/g,
-            '<a href="$2" target="_blank">$1</a>'
-        );
+        content = content.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
         
-        // Convert resource suggestions to cards
         content = content.replace(
             /Resource: ([^\n]+)\nURL: ([^\n]+)\nType: ([^\n]+)\nCategory: ([^\n]+)/g,
             '<div class="resource-suggestion">' +
@@ -158,14 +153,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return content;
     }
     
-    // Handle form submission
     chatForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const message = messageInput.value.trim();
         if (!message) return;
         
-        // Disable input and show loading state
         messageInput.disabled = true;
         const submitBtn = chatForm.querySelector('button[type="submit"]');
         const originalBtnHtml = submitBtn.innerHTML;
@@ -173,39 +166,30 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
         try {
-            const response = await fetch(window.location.href, {
+            const response = await fetch('chatbot/api/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken'),
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    message: message
-                })
+                body: JSON.stringify({ message: message })
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const data = await response.json();
             
             if (data.status === 'success') {
-                // Add user message
                 appendMessage(message, 'user');
-                // Add bot response
                 appendMessage(data.message, 'bot');
             } else {
-                // Show error in chat
                 appendMessage(`Error: ${data.message}`, 'error');
             }
         } catch (error) {
-            // Show error in chat
             appendMessage('Error: Unable to connect to the server. Please try again.', 'error');
             console.error('Chat error:', error);
         } finally {
-            // Reset form state
             messageInput.value = '';
             messageInput.disabled = false;
             submitBtn.disabled = false;
@@ -213,17 +197,14 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
         }
     });
-    
-    // Handle clear chat
+
     clearChatBtn.addEventListener('click', async function() {
         if (!confirm('Are you sure you want to clear the chat history?')) return;
         
         try {
             const response = await fetch('/chatbot/clear/', {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
             });
             
             const data = await response.json();
@@ -246,38 +227,21 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error clearing chat. Please try again.');
         }
     });
-    
-    // Helper function to append messages
+
     function appendMessage(content, type) {
         const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         const formattedContent = type === 'bot' ? formatMessage(content) : content;
-        const messageHtml = `
-            <div class="chat-message ${type}-message">
-                <div class="message-content">
-                    ${formattedContent.replace(/\n/g, '<br>')}
-                </div>
-                <small class="text-muted">${time}</small>
-            </div>
-        `;
+        const messageHtml = `<div class="chat-message ${type}-message">
+            <div class="message-content">${formattedContent.replace(/\n/g, '<br>')}</div>
+            <small class="text-muted">${time}</small>
+        </div>`;
         chatMessages.insertAdjacentHTML('beforeend', messageHtml);
         scrollToBottom();
     }
-    
-    // Helper function to get CSRF token
+
     function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
+        return document.cookie.split('; ').find(row => row.startsWith(name))?.split('=')[1] || '';
     }
 });
 </script>
-{% endblock %} 
+{% endblock %}
