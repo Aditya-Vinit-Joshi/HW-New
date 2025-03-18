@@ -10,12 +10,45 @@ import requests
 import datetime
 
 def github_repos(request):
-    repos = GitHubRepository.objects.all().order_by('-stars')
+    base_url = "https://api.github.com/search/repositories"
+    params = {
+        "q": "machine+learning+OR+artificial+intelligence+OR+deep+learning+OR+generative+ai",
+        "sort": "stars",
+        "order": "desc",
+        "per_page": 100,
+    }
+
+    # Process filters from the request
+    query = request.GET.get('q', '')
+    category = request.GET.get('category', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    sort_by = request.GET.get('sort', 'stars')
+
+    if query:
+        params["q"] += f"+{query}"
+
+    if category:
+        params["q"] += f"+category:{category}"
+
+    # Filter by date range if present
+    if date_from and date_to:
+        params["q"] += f"+created:{date_from}..{date_to}"
+
+    params['sort'] = sort_by  # Update sort parameter
+
+    response = requests.get(base_url, params=params)
+    data = response.json()
+
+    if 'items' not in data:
+        return JsonResponse({'error': 'GitHub API error', 'details': data}, status=500)
+
+    repos = data['items']
     paginator = Paginator(repos, 12)
     page = request.GET.get('page')
     repos = paginator.get_page(page)
-    
-    return render(request, 'github/repo_list.html', {'repos': repos})
+
+    return render(request, 'github/repo_list.html', {'repos': repos, 'query': query, 'category': category})
 
 def trending_repos(request):
     language = request.GET.get('language', '')

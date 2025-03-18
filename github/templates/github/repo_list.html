@@ -8,10 +8,9 @@
     <div class="row">
         <div class="col-12">
             <h1 class="mb-4">AI/ML GitHub Repositories</h1>
-            
-            {% if repos %}
-                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                    {% for repo in repos %}
+
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for repo in repos %}
                     <div class="col">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
@@ -35,49 +34,36 @@
                                     </small>
                                 </div>
                             </div>
-                            <div class="card-footer bg-transparent">
-                                {% if repo.language %}
-                                <span class="badge bg-info">{{ repo.language }}</span>
-                                {% endif %}
-                                {% if repo.topics %}
-                                    {% for topic in repo.topics|slice:":3" %}
-                                    <span class="badge bg-secondary">{{ topic }}</span>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
                         </div>
                     </div>
+                {% endfor %}
+            </div>
+            
+
+            {% if is_paginated %}
+            <nav aria-label="Repository pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
                     {% endfor %}
-                </div>
-                
-                {% if is_paginated %}
-                <nav aria-label="Repository pagination" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for num in page_obj.paginator.page_range %}
-                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                        </li>
-                        {% endfor %}
-                        
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>No repositories found. Please try again later.
-                </div>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
             {% endif %}
+
         </div>
     </div>
 </div>
@@ -99,4 +85,4 @@
     font-weight: 500;
 }
 </style>
-{% endblock %} 
+{% endblock %}
