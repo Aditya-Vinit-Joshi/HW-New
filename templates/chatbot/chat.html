@@ -1,264 +1,247 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}AI Assistant - AI Learning Hub{% endblock %}
-
-{% block extra_css %}
-<style>
-.chat-container {
-    height: calc(100vh - 250px);
-    min-height: 500px;
-}
-
-.chat-messages {
-    height: calc(100% - 100px);
-    overflow-y: auto;
-    padding: 1rem;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-}
-
-.message {
-    margin-bottom: 1rem;
-    max-width: 80%;
-}
-
-.message.user {
-    margin-left: auto;
-}
-
-.message.assistant {
-    margin-right: auto;
-}
-
-.message .content {
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    display: inline-block;
-}
-
-.message.user .content {
-    background: #007bff;
-    color: white;
-    border-top-right-radius: 0.25rem;
-}
-
-.message.assistant .content {
-    background: #e9ecef;
-    color: #212529;
-    border-top-left-radius: 0.25rem;
-}
-
-.message .meta {
-    font-size: 0.75rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
-
-.chat-input {
-    margin-top: 1rem;
-}
-
-.typing-indicator {
-    display: none;
-    padding: 0.5rem;
-    color: #6c757d;
-}
-
-.typing-indicator.active {
-    display: block;
-}
-
-.code-block {
-    background: #2d2d2d;
-    color: #f8f8f2;
-    padding: 1rem;
-    border-radius: 0.25rem;
-    margin: 0.5rem 0;
-    overflow-x: auto;
-}
-
-.resource-suggestion {
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    padding: 0.75rem;
-    margin: 0.5rem 0;
-}
-</style>
-{% endblock %}
+{% block title %}AI Learning Assistant{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card chat-container">
-                <div class="card-header">
-                    <h3 class="mb-0">
-                        <i class="fas fa-robot"></i> AI Assistant
-                    </h3>
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">AI Learning Assistant</h5>
+                    <button id="clearChat" class="btn btn-sm btn-light">Clear Chat</button>
                 </div>
-                <div class="card-body p-0">
-                    <div class="chat-messages" id="chat-messages">
-                        <!-- Welcome Message -->
-                        <div class="message assistant">
-                            <div class="content">
-                                <p>👋 Hi! I'm your AI learning assistant. I can help you with:</p>
-                                <ul>
-                                    <li>Finding learning resources</li>
-                                    <li>Answering questions about AI topics</li>
-                                    <li>Providing code examples and explanations</li>
-                                    <li>Suggesting learning paths</li>
-                                </ul>
-                                <p>How can I help you today?</p>
-                            </div>
-                            <div class="meta">AI Assistant</div>
-                        </div>
-                        
-                        {% for message in chat_history %}
-                            <div class="message {% if message.is_user %}user{% else %}assistant{% endif %}">
-                                <div class="content">
+                <div class="card-body chat-container" style="height: 500px; overflow-y: auto;">
+                    <div id="chatMessages" class="d-flex flex-column gap-3">
+                        {% if messages %}
+                            {% for message in messages %}
+                            <div class="chat-message {% if message.message_type == 'user' %}user-message{% else %}bot-message{% endif %}">
+                                <div class="message-content">
                                     {{ message.content|linebreaks }}
-                                    {% if message.resources %}
-                                        <div class="resource-suggestions">
-                                            <h6>Related Resources:</h6>
-                                            {% for resource in message.resources %}
-                                                <div class="resource-suggestion">
-                                                    <a href="{% url 'resources:resource_detail' resource.pk %}" target="_blank">
-                                                        {{ resource.title }}
-                                                    </a>
-                                                    <small class="text-muted d-block">
-                                                        {{ resource.description|truncatewords:20 }}
-                                                    </small>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
                                 </div>
-                                <div class="meta">
+                                <small class="text-muted">
                                     {{ message.timestamp|date:"g:i A" }}
-                                </div>
+                                </small>
                             </div>
-                        {% endfor %}
-                        
-                        <div class="typing-indicator" id="typing-indicator">
-                            <i class="fas fa-circle-notch fa-spin"></i> AI Assistant is typing...
+                            {% endfor %}
+                        {% else %}
+                        <div class="text-center text-muted my-4">
+                            <i class="fas fa-robot fa-3x mb-3"></i>
+                            <p>Welcome! I can help you find AI learning resources and answer questions about our content.</p>
+                            <p class="small">Try asking about:</p>
+                            <ul class="list-unstyled">
+                                <li>• Available learning resources</li>
+                                <li>• Specific AI/ML topics</li>
+                                <li>• Course recommendations</li>
+                                <li>• Resource categories</li>
+                            </ul>
                         </div>
+                        {% endif %}
                     </div>
-                    
-                    <div class="chat-input px-3 pb-3">
-                        <form id="chat-form" method="POST" action="{% url 'chatbot:chat' %}">
-                            {% csrf_token %}
-                            <div class="input-group">
-                                <input type="text" id="user-input" name="message" class="form-control" 
-                                       placeholder="Type your message..." required>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane"></i> Send
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                </div>
+                <div class="card-footer">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <input type="text" id="messageInput" class="form-control" placeholder="Ask about AI learning resources..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.chat-message {
+    padding: 1rem;
+    border-radius: 1rem;
+    max-width: 80%;
+    position: relative;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    align-self: flex-end;
+    margin-left: 20%;
+}
+
+.bot-message {
+    background-color: #f5f5f5;
+    align-self: flex-start;
+    margin-right: 20%;
+}
+
+.message-content {
+    margin-bottom: 0.5rem;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.message-content a:hover {
+    text-decoration: underline;
+}
+
+.resource-suggestion {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.resource-suggestion h6 {
+    margin-bottom: 0.5rem;
+}
+
+.resource-meta {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.error-message {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+    align-self: center;
+    max-width: 80%;
+}
+</style>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    // Scroll to bottom of chat
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
+    const clearChatBtn = document.getElementById('clearChat');
+    
     function scrollToBottom() {
-        const chatMessages = document.getElementById('chat-messages');
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        const container = document.querySelector('.chat-container');
+        container.scrollTop = container.scrollHeight;
     }
+    
     scrollToBottom();
 
-    // Handle form submission
-    $('#chat-form').on('submit', function(e) {
+    function formatMessage(content) {
+        content = content.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        
+        content = content.replace(
+            /Resource: ([^\n]+)\nURL: ([^\n]+)\nType: ([^\n]+)\nCategory: ([^\n]+)/g,
+            '<div class="resource-suggestion">' +
+            '<h6><a href="$2" target="_blank">$1</a></h6>' +
+            '<div class="resource-meta">' +
+            '<span class="badge bg-primary">$3</span> ' +
+            '<span class="badge bg-secondary">$4</span>' +
+            '</div>' +
+            '</div>'
+        );
+        
+        return content;
+    }
+    
+    chatForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const form = $(this);
-        const input = $('#user-input');
-        const message = input.val().trim();
-        
+        const message = messageInput.value.trim();
         if (!message) return;
-
-        // Add user message
-        const userMessage = `
-            <div class="message user">
-                <div class="content">${message}</div>
-                <div class="meta">${new Date().toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})}</div>
-            </div>
-        `;
-        $('#chat-messages').append(userMessage);
-        scrollToBottom();
         
-        // Clear input
-        input.val('');
+        messageInput.disabled = true;
+        const submitBtn = chatForm.querySelector('button[type="submit"]');
+        const originalBtnHtml = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
-        // Show typing indicator
-        $('#typing-indicator').addClass('active');
-        
-        // Send message to server
-        $.ajax({
-            url: form.attr('action'),
-            method: 'POST',
-            data: {
-                message: message,
-                csrfmiddlewaretoken: form.find('input[name="csrfmiddlewaretoken"]').val()
-            },
-            success: function(response) {
-                // Hide typing indicator
-                $('#typing-indicator').removeClass('active');
-                
-                // Add AI response
-                const aiMessage = `
-                    <div class="message assistant">
-                        <div class="content">
-                            ${response.message}
-                            ${response.resources ? `
-                                <div class="resource-suggestions">
-                                    <h6>Related Resources:</h6>
-                                    ${response.resources.map(resource => `
-                                        <div class="resource-suggestion">
-                                            <a href="/resources/${resource.id}/" target="_blank">
-                                                ${resource.title}
-                                            </a>
-                                            <small class="text-muted d-block">
-                                                ${resource.description}
-                                            </small>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="meta">AI Assistant</div>
-                    </div>
-                `;
-                $('#chat-messages').append(aiMessage);
-                scrollToBottom();
-            },
-            error: function() {
-                // Hide typing indicator
-                $('#typing-indicator').removeClass('active');
-                
-                // Show error message
-                const errorMessage = `
-                    <div class="message assistant">
-                        <div class="content">
-                            Sorry, I encountered an error. Please try again.
-                        </div>
-                        <div class="meta">AI Assistant</div>
-                    </div>
-                `;
-                $('#chat-messages').append(errorMessage);
-                scrollToBottom();
+        try {
+            const response = await fetch('api/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            });
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                appendMessage(message, 'user');
+                appendMessage(data.message, 'bot');
+            } else {
+                appendMessage(`Error: ${data.message}`, 'error');
             }
-        });
+        } catch (error) {
+            appendMessage('Error: Unable to connect to the server. Please try again.', 'error');
+            console.error('Chat error:', error);
+        } finally {
+            messageInput.value = '';
+            messageInput.disabled = false;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
+            messageInput.focus();
+        }
     });
+
+    clearChatBtn.addEventListener('click', async function() {
+        if (!confirm('Are you sure you want to clear the chat history?')) return;
+        
+        try {
+            const response = await fetch('/chatbot/clear/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                chatMessages.innerHTML = `
+                    <div class="text-center text-muted my-4">
+                        <i class="fas fa-robot fa-3x mb-3"></i>
+                        <p>Welcome! I can help you find AI learning resources and answer questions about our content.</p>
+                        <p class="small">Try asking about:</p>
+                        <ul class="list-unstyled">
+                            <li>• Available learning resources</li>
+                            <li>• Specific AI/ML topics</li>
+                            <li>• Course recommendations</li>
+                            <li>• Resource categories</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            alert('Error clearing chat. Please try again.');
+        }
+    });
+
+    function appendMessage(content, type) {
+        const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const formattedContent = type === 'bot' ? formatMessage(content) : content;
+        const messageHtml = `<div class="chat-message ${type}-message">
+            <div class="message-content">${formattedContent.replace(/\n/g, '<br>')}</div>
+            <small class="text-muted">${time}</small>
+        </div>`;
+        chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+        scrollToBottom();
+    }
+
+    function getCookie(name) {
+        return document.cookie.split('; ').find(row => row.startsWith(name))?.split('=')[1] || '';
+    }
 });
 </script>
-{% endblock %} 
+{% endblock %}
