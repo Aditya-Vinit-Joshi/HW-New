@@ -2,11 +2,10 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Avg, Count
-from .models import Resource, Category, Comment, Rating
+from django.db.models import Avg, Q, Count
+from .models import Resource, Category, Comment, Rating, VideoResource
 from .forms import ResourceForm, CommentForm, RatingForm
 from django.http import JsonResponse
-from django.db.models import Q
 
 def is_admin(user):
     return user.is_staff or user.is_superuser
