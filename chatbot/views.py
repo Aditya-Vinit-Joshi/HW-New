@@ -50,3 +50,11 @@ def chatbot_api(request):
         return JsonResponse({"status": "error", "message": "Invalid JSON format."}, status=400)
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+@csrf_exempt
+def clear_chat(request):
+    if request.method == "POST":
+        request.session['messages'] = []  # Clear chat history in session
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
