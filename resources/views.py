@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Avg, Q, Count
-from .models import Resource, Category, Comment, Rating, VideoResource
+from .models import Resource, Category, Comment, Rating
 from .forms import ResourceForm, CommentForm, RatingForm
 from django.http import JsonResponse
 
