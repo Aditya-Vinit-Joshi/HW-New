@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Resource Approval - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Resource Approval</h1>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active" data-filter="pending">
+                Pending ({{ pending_count }})
+            </button>
+            <button type="button" class="btn btn-outline-success" data-filter="approved">
+                Approved
+            </button>
+            <button type="button" class="btn btn-outline-danger" data-filter="rejected">
+                Rejected
+            </button>
+        </div>
+    </div>
+
+    {% if resources %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Author</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resource in resources %}
+                        <tr>
+                            <td>
+                                <a href="{{ resource.url }}" target="_blank" class="text-decoration-none">
+                                    {{ resource.title }}
+                                </a>
+                            </td>
+                            <td>{{ resource.get_resource_type_display }}</td>
+                            <td>{{ resource.category.name }}</td>
+                            <td>{{ resource.author }}</td>
+                            <td>{{ resource.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge {% if resource.is_approved %}bg-success{% elif resource.is_rejected %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {% if resource.is_approved %}
+                                        Approved
+                                    {% elif resource.is_rejected %}
+                                        Rejected
+                                    {% else %}
+                                        Pending
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#resourceModal{{ resource.id }}">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    {% if not resource.is_approved and not resource.is_rejected %}
+                                        <button type="button" class="btn btn-sm btn-success approve-btn" data-resource-id="{{ resource.id }}">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger reject-btn" data-resource-id="{{ resource.id }}">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Resource Details Modal -->
+                        <div class="modal fade" id="resourceModal{{ resource.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Resource Details</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h4>{{ resource.title }}</h4>
+                                        <p class="text-muted">
+                                            Submitted by {{ resource.author }} on {{ resource.created_at|date:"F j, Y" }}
+                                        </p>
+                                        <hr>
+                                        <h5>Description</h5>
+                                        <p>{{ resource.description }}</p>
+                                        <h5>URL</h5>
+                                        <p><a href="{{ resource.url }}" target="_blank">{{ resource.url }}</a></p>
+                                        <h5>Tags</h5>
+                                        <p>
+                                            {% for tag in resource.tags.all %}
+                                                <span class="badge bg-secondary">{{ tag.name }}</span>
+                                            {% endfor %}
+                                        </p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        {% if not resource.is_approved and not resource.is_rejected %}
+                                            <button type="button" class="btn btn-success approve-btn" data-resource-id="{{ resource.id }}">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button type="button" class="btn btn-danger reject-btn" data-resource-id="{{ resource.id }}">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav aria-label="Resource approval pages" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No resources found.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Handle filter buttons
+    $('.btn-group[role="group"] button').click(function() {
+        $(this).siblings().removeClass('active');
+        $(this).addClass('active');
+        
+        const filter = $(this).data('filter');
+        window.location.href = `?filter=${filter}`;
+    });
+
+    // Handle approve/reject buttons
+    $('.approve-btn, .reject-btn').click(function() {
+        const btn = $(this);
+        const resourceId = btn.data('resource-id');
+        const action = btn.hasClass('approve-btn') ? 'approve' : 'reject';
+
+        $.ajax({
+            url: `/resources/${resourceId}/${action}/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Reload the page to show updated status
+                    window.location.reload();
+                }
+            }
+        });
+    });
+
+    // Function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %} 

@@ -22,14 +22,20 @@
                     <h5 class="mb-0">Filter Resources</h5>
                 </div>
                 <div class="card-body">
-                    <form method="GET">
+                    <form method="GET" id="filter-form">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="q" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="q" name="q" value="{% if query and query != 'None' %}{{ query }}{% endif %}" placeholder="Search resources...">
+                        </div>
+
                         <!-- Category Filter -->
                         <div class="mb-3">
                             <label for="category" class="form-label">Category</label>
                             <select class="form-select" id="category" name="category">
                                 <option value="">All Categories</option>
                                 {% for cat in categories %}
-                                    <option value="{{ cat.slug }}" {% if request.GET.category == cat.slug %}selected{% endif %}>
+                                    <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>
                                         {{ cat.name }}
                                     </option>
                                 {% endfor %}
@@ -42,7 +48,7 @@
                             <select class="form-select" id="type" name="type">
                                 <option value="">All Types</option>
                                 {% for type_value, type_label in resource_types %}
-                                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>
+                                    <option value="{{ type_value }}" {% if current_type == type_value %}selected{% endif %}>
                                         {{ type_label }}
                                     </option>
                                 {% endfor %}
@@ -53,16 +59,25 @@
                         <div class="mb-3">
                             <label for="sort" class="form-label">Sort By</label>
                             <select class="form-select" id="sort" name="sort">
-                                <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
-                                <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
-                                <option value="-views" {% if sort_by == '-views' %}selected{% endif %}>Most Viewed</option>
-                                <option value="-rating" {% if sort_by == '-rating' %}selected{% endif %}>Highest Rated</option>
+                                <option value="-created_at" {% if current_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                                <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                                <option value="-views" {% if current_sort == '-views' %}selected{% endif %}>Most Viewed</option>
+                                <option value="-rating" {% if current_sort == '-rating' %}selected{% endif %}>Highest Rated</option>
+                                <option value="rating" {% if current_sort == 'rating' %}selected{% endif %}>Lowest Rated</option>
+                                <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Title (A-Z)</option>
+                                <option value="-title" {% if current_sort == '-title' %}selected{% endif %}>Title (Z-A)</option>
                             </select>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-filter"></i> Apply Filters
                         </button>
+
+                        {% if request.GET %}
+                            <a href="{% url 'resources:resource_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
@@ -108,9 +123,21 @@
                                         <small class="text-muted">
                                             Added {{ resource.created_at|timesince }} ago
                                         </small>
-                                        <small class="text-muted">
-                                            <i class="fas fa-folder"></i> {{ resource.category.name }}
-                                        </small>
+                                        <div class="d-flex align-items-center">
+                                            {% if user.is_authenticated %}
+                                                <button class="btn btn-sm btn-outline-primary save-resource-btn me-2" 
+                                                        data-resource-id="{{ resource.id }}"
+                                                        data-saved="{% if resource in user.saved_resources.all %}true{% else %}false{% endif %}">
+                                                    <i class="fas {% if resource in user.saved_resources.all %}fa-bookmark{% else %}fa-bookmark-o{% endif %}"></i>
+                                                    <span class="save-text">
+                                                        {% if resource in user.saved_resources.all %}Saved{% else %}Save{% endif %}
+                                                    </span>
+                                                </button>
+                                            {% endif %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-folder"></i> {{ resource.category.name }}
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -119,36 +146,68 @@
                 </div>
 
                 <!-- Pagination -->
-                {% if resources.has_other_pages %}
+                {% if is_paginated %}
                     <nav aria-label="Resource pages" class="mt-4">
                         <ul class="pagination justify-content-center">
-                            {% if resources.has_previous %}
+                            {% if page_obj.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ resources.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        Previous
+                                    <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-double-left"></i>
                                     </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-left"></i></span>
                                 </li>
                             {% endif %}
 
-                            {% for num in resources.paginator.page_range %}
-                                {% if resources.number == num %}
-                                    <li class="page-item active">
-                                        <span class="page-link">{{ num }}</span>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                            {{ num }}
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            {% endfor %}
+                            {% with ''|center:page_obj.paginator.num_pages as range %}
+                                {% for _ in range %}
+                                    {% with forloop.counter as i %}
+                                        {% if page_obj.number == i %}
+                                            <li class="page-item active d-none d-md-block">
+                                                <span class="page-link">{{ i }}</span>
+                                            </li>
+                                        {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                                            <li class="page-item d-none d-md-block">
+                                                <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                                    {{ i }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endwith %}
 
-                            {% if resources.has_next %}
+                            <li class="page-item disabled d-block d-md-none">
+                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ resources.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        Next
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-right"></i>
                                     </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
                                 </li>
                             {% endif %}
                         </ul>
@@ -156,9 +215,9 @@
                 {% endif %}
             {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No resources found.
+                    <i class="fas fa-info-circle"></i> No resources found matching your criteria.
                     {% if user.is_authenticated %}
-                        <a href="{% url 'resources:resource_create' %}" class="alert-link">Add the first resource!</a>
+                        <a href="{% url 'resources:resource_create' %}" class="alert-link">Add a new resource!</a>
                     {% endif %}
                 </div>
             {% endif %}
@@ -170,10 +229,67 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
+    // Add debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
     // Auto-submit form when sort, type, or category changes
     $('#sort, #type, #category').change(function() {
         $(this).closest('form').submit();
     });
+
+    // Auto-submit form when search input changes (with debounce)
+    $('#q').on('input', debounce(function() {
+        $(this).closest('form').submit();
+    }, 500));
+
+    // Handle save/unsave functionality
+    $('.save-resource-btn').click(function() {
+        const btn = $(this);
+        const resourceId = btn.data('resource-id');
+        const saved = btn.data('saved') === true;
+
+        $.ajax({
+            url: `/resources/${resourceId}/save/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.saved) {
+                    btn.find('i').removeClass('fa-bookmark-o').addClass('fa-bookmark');
+                    btn.find('.save-text').text('Saved');
+                } else {
+                    btn.find('i').removeClass('fa-bookmark').addClass('fa-bookmark-o');
+                    btn.find('.save-text').text('Save');
+                }
+                btn.data('saved', response.saved);
+            }
+        });
+    });
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 });
 </script>
 {% endblock %} 
