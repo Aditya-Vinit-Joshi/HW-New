@@ -10,11 +10,9 @@ import os
 load_dotenv()
 
 # Configure Gemini AI API key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is not set in environment variables.")
 
-genai.configure(api_key=GEMINI_API_KEY)
+
+
 
 def chat_view(request):
     """Render chat interface with message history."""
@@ -24,6 +22,11 @@ def chat_view(request):
 @csrf_exempt  # Remove this for production and use proper CSRF handling
 def chatbot_api(request):
     """API endpoint for chatbot communication."""
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    genai.configure(api_key=GEMINI_API_KEY)
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set in environment variables.")
+
     if request.method != "POST":
         return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)
 
@@ -35,7 +38,7 @@ def chatbot_api(request):
             return JsonResponse({"status": "error", "message": "Message cannot be empty."}, status=400)
 
         # Interact with Gemini AI
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(user_message)
 
         # Extract AI response correctly
