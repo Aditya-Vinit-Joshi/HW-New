@@ -37,18 +37,36 @@ def github_repos(request):
 
     params['sort'] = sort_by  # Update sort parameter
 
-    response = requests.get(base_url, params=params)
-    data = response.json()
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        data = response.json()
+        
+        if 'items' not in data:
+            # If API call fails, fall back to database
+            repos = GitHubRepository.objects.all().order_by('-stars')
+        else:
+            repos = data['items']
+            
+    except (requests.RequestException, KeyError) as e:
+        # If there's any error, fall back to database
+        repos = GitHubRepository.objects.all().order_by('-stars')
+        messages.warning(request, 'Unable to fetch from GitHub API. Showing cached repositories.')
 
-    if 'items' not in data:
-        return JsonResponse({'error': 'GitHub API error', 'details': data}, status=500)
-
-    repos = data['items']
+    # Paginate the results
     paginator = Paginator(repos, 12)
     page = request.GET.get('page')
     repos = paginator.get_page(page)
 
-    return render(request, 'github/repo_list.html', {'repos': repos, 'query': query, 'category': category})
+    context = {
+        'repos': repos,
+        'query': query,
+        'category': category,
+        'date_from': date_from,
+        'date_to': date_to,
+        'sort_by': sort_by,
+    }
+    return render(request, 'github/repo_list.html', context)
 
 def trending_repos(request):
     language = request.GET.get('language', '')

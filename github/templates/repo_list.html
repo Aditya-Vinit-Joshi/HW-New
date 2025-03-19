@@ -1,0 +1,130 @@
+<div class="container mt-4">
+    <!-- Search and filter section -->
+    <div class="row mb-4">
+        <div class="col">
+            <form method="get" class="form-inline">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Search repositories..." value="{{ query }}">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="machine-learning" {% if category == 'machine-learning' %}selected{% endif %}>Machine Learning</option>
+                        <option value="deep-learning" {% if category == 'deep-learning' %}selected{% endif %}>Deep Learning</option>
+                        <option value="artificial-intelligence" {% if category == 'artificial-intelligence' %}selected{% endif %}>Artificial Intelligence</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Repository grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for repo in repos %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ repo.url }}" target="_blank" class="text-decoration-none">
+                            {{ repo.name }}
+                        </a>
+                    </h5>
+                    <p class="card-text">{{ repo.description|truncatechars:150 }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="stats">
+                            <span class="badge bg-primary me-2">
+                                <i class="fas fa-star"></i> {{ repo.stars }}
+                            </span>
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-code-branch"></i> {{ repo.forks }}
+                            </span>
+                        </div>
+                        {% if repo.language %}
+                        <span class="badge bg-info">{{ repo.language }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="topics">
+                        {% for topic in repo.topics %}
+                        <span class="badge bg-light text-dark me-1">{{ topic }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if repos.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if repos.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ repos.previous_page_number }}&q={{ query }}&category={{ category }}">Previous</a>
+            </li>
+            {% endif %}
+
+            {% for num in repos.paginator.page_range %}
+            <li class="page-item {% if repos.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}&q={{ query }}&category={{ category }}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if repos.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ repos.next_page_number }}&q={{ query }}&category={{ category }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Add this CSS to your stylesheet or in a style tag -->
+<style>
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.card-text {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-inline {
+    display: flex;
+    gap: 1rem;
+}
+
+.input-group {
+    max-width: 600px;
+}
+</style> 

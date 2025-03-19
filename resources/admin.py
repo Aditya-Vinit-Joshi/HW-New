@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Resource, Category, Comment, Rating
+from .models import Resource, Category, Comment, Rating, VideoResource
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -13,6 +13,13 @@ class ResourceAdmin(admin.ModelAdmin):
     list_filter = ('resource_type', 'category', 'is_approved', 'created_at')
     search_fields = ('title', 'description')
     raw_id_fields = ('author',)
+    date_hierarchy = 'created_at'
+
+@admin.register(VideoResource)
+class VideoResourceAdmin(admin.ModelAdmin):
+    list_display = ('title', 'platform', 'category', 'instructor', 'duration', 'is_approved')
+    list_filter = ('platform', 'category', 'is_approved', 'created_at')
+    search_fields = ('title', 'description', 'instructor')
     date_hierarchy = 'created_at'
 
 @admin.register(Comment)

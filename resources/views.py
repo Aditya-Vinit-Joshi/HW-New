@@ -2,8 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Avg
-from .models import Resource, Category, Comment, Rating
+from django.db.models import Avg, Q
+from .models import Resource, Category, Comment, Rating, VideoResource
 from .forms import ResourceForm, CommentForm, RatingForm
 from django.http import JsonResponse
 
@@ -28,26 +28,7 @@ def resource_list(request):
     return render(request, 'resources/resource_list.html', {'resources': resources})
 
 def resource_detail(request, pk):
-    resource = get_object_or_404(Resource, pk=pk)
-    comments = resource.comments.all().order_by('-created_at')
-    rating_form = RatingForm()
-    comment_form = CommentForm()
-    
-    # Increment view count
-    resource.views += 1
-    resource.save()
-    
-    # Get average rating
-    avg_rating = resource.ratings.aggregate(Avg('rating'))['rating__avg']
-    
-    context = {
-        'resource': resource,
-        'comments': comments,
-        'rating_form': rating_form,
-        'comment_form': comment_form,
-        'avg_rating': avg_rating,
-    }
-    return render(request, 'resources/resource_detail.html', context)
+    return render(request, pk)
 
 @login_required
 def resource_create(request):
@@ -202,3 +183,59 @@ def my_resources(request):
 def saved_resources(request):
     resources = request.user.saved_resources.all().order_by('-created_at')
     return render(request, 'resources/saved_resources.html', {'resources': resources})
+
+def video_resources(request):
+    # Get filter parameters
+    platform = request.GET.get('platform', '')
+    category = request.GET.get('category', '')
+    search_query = request.GET.get('q', '')
+    
+    # Start with all approved video resources
+    videos = VideoResource.objects.filter(is_approved=True)
+    
+    # Apply filters
+    if platform:
+        videos = videos.filter(platform=platform)
+    if category:
+        videos = videos.filter(category__slug=category)
+    if search_query:
+        videos = videos.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(tags__name__icontains=search_query)
+        ).distinct()
+    
+    # Get all categories for the filter dropdown
+    categories = Category.objects.all()
+    
+    # Get unique platforms for the filter dropdown
+    platforms = VideoResource.PLATFORMS
+    
+    # Paginate results
+    paginator = Paginator(videos, 12)  # Show 12 videos per page
+    page = request.GET.get('page')
+    videos = paginator.get_page(page)
+    
+    context = {
+        'videos': videos,
+        'categories': categories,
+        'platforms': platforms,
+        'selected_platform': platform,
+        'selected_category': category,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'resources/video_resources.html', context)
+
+@login_required
+def like_video(request, video_id):
+    video = get_object_or_404(VideoResource, id=video_id)
+    
+    if request.user in video.likes.all():
+        video.likes.remove(request.user)
+        liked = False
+    else:
+        video.likes.add(request.user)
+        liked = True
+    
+    return JsonResponse({'liked': liked})
