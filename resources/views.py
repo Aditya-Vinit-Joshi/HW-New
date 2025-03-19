@@ -154,7 +154,7 @@ def like_resource(request, pk):
 def save_resource(request, pk):
     resource = get_object_or_404(Resource, pk=pk)
     
-    if request.user in resource.saved_by.all():
+    if resource in request.user.saved_resources.all():
         request.user.saved_resources.remove(resource)
         saved = False
     else:

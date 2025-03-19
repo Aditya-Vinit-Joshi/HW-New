@@ -105,9 +105,17 @@
                                     </div>
                                 </div>
                                 <div class="card-footer bg-transparent">
-                                    <small class="text-muted">
-                                        Added {{ resource.created_at|timesince }} ago
-                                    </small>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            Added {{ resource.created_at|timesince }} ago
+                                        </small>
+                                        {% if user.is_authenticated %}
+                                            <button class="btn btn-sm btn-outline-primary save-resource" data-resource-id="{{ resource.pk }}" data-saved="{% if resource in user.saved_resources.all %}true{% else %}false{% endif %}">
+                                                <i class="fas {% if resource in user.saved_resources.all %}fa-bookmark{% else %}fa-bookmark-o{% endif %}"></i>
+                                                <span class="save-text">{% if resource in user.saved_resources.all %}Saved{% else %}Save{% endif %}</span>
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -169,6 +177,35 @@ $(document).ready(function() {
     // Auto-submit form when sort or type changes
     $('#sort, #type').change(function() {
         $(this).closest('form').submit();
+    });
+
+    // Handle save button clicks
+    $('.save-resource').click(function() {
+        var button = $(this);
+        var resourceId = button.data('resource-id');
+        var saved = button.data('saved') === true;
+
+        $.ajax({
+            url: '/resources/' + resourceId + '/save/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.saved) {
+                    button.find('i').removeClass('fa-bookmark-o').addClass('fa-bookmark');
+                    button.find('.save-text').text('Saved');
+                    button.data('saved', true);
+                } else {
+                    button.find('i').removeClass('fa-bookmark').addClass('fa-bookmark-o');
+                    button.find('.save-text').text('Save');
+                    button.data('saved', false);
+                }
+            },
+            error: function() {
+                alert('Error saving resource. Please try again.');
+            }
+        });
     });
 });
 </script>

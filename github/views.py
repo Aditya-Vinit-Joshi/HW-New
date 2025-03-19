@@ -8,47 +8,68 @@ from .models import GitHubRepository, RepositoryComment, RepositoryRating
 from .forms import CommentForm, RatingForm
 import requests
 import datetime
+import json
+import os
 
 def github_repos(request):
-    base_url = "https://api.github.com/search/repositories"
-    params = {
-        "q": "machine+learning+OR+artificial+intelligence+OR+deep+learning+OR+generative+ai",
-        "sort": "stars",
-        "order": "desc",
-        "per_page": 100,
-    }
+    # Read the JSON file
+    json_file_path = os.path.join(settings.BASE_DIR, 'github_ai_repos.json')
+    try:
+        with open(json_file_path, 'r') as file:
+            repositories = json.load(file)
+    except Exception as e:
+        messages.error(request, f'Error reading repository data: {str(e)}')
+        return render(request, 'github/repo_list.html', {'repos': []})
 
     # Process filters from the request
-    query = request.GET.get('q', '')
-    category = request.GET.get('category', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    query = request.GET.get('q', '').lower()
     sort_by = request.GET.get('sort', 'stars')
+    date_from = request.GET.get('date_from', '')
 
+    # Filter repositories based on search query
     if query:
-        params["q"] += f"+{query}"
+        repositories = [
+            repo for repo in repositories
+            if query in repo['name'].lower() or 
+               query in repo.get('description', '').lower() or
+               query in repo.get('language', '').lower() or
+               any(query in topic.lower() for topic in repo.get('topics', []))
+        ]
 
-    if category:
-        params["q"] += f"+category:{category}"
+    # Sort repositories
+    if sort_by == 'stars':
+        repositories.sort(key=lambda x: x.get('stargazers_count', 0), reverse=True)
+    elif sort_by == 'updated':
+        repositories.sort(key=lambda x: x.get('updated_at', ''), reverse=True)
+    elif sort_by == 'forks':
+        repositories.sort(key=lambda x: x.get('forks_count', 0), reverse=True)
 
-    # Filter by date range if present
-    if date_from and date_to:
-        params["q"] += f"+created:{date_from}..{date_to}"
+    # Filter by date if specified
+    if date_from:
+        from datetime import datetime
+        date_from = datetime.strptime(date_from, '%Y-%m-%d')
+        repositories = [
+            repo for repo in repositories
+            if datetime.strptime(repo.get('updated_at', '').split('T')[0], '%Y-%m-%d') >= date_from
+        ]
 
-    params['sort'] = sort_by  # Update sort parameter
+    # Paginate the results
+    paginator = Paginator(repositories, 12)  # Show 12 repos per page
+    page = request.GET.get('page', 1)
+    try:
+        repos = paginator.page(page)
+    except:
+        repos = paginator.page(1)
 
-    response = requests.get(base_url, params=params)
-    data = response.json()
-
-    if 'items' not in data:
-        return JsonResponse({'error': 'GitHub API error', 'details': data}, status=500)
-
-    repos = data['items']
-    paginator = Paginator(repos, 12)
-    page = request.GET.get('page')
-    repos = paginator.get_page(page)
-
-    return render(request, 'github/repo_list.html', {'repos': repos, 'query': query, 'category': category})
+    context = {
+        'repos': repos,
+        'query': query,
+        'sort_by': sort_by,
+        'date_from': date_from,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': repos,
+    }
+    return render(request, 'github/repo_list.html', context)
 
 def trending_repos(request):
     language = request.GET.get('language', '')
