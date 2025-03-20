@@ -88,35 +88,33 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light mt-5 py-4">
+    <footer class="bg-dark text-light mt-5 py-5">
         <div class="container">
             <div class="row">
-                <div class="col-md-4">
-                    <h5>AI Learning Hub</h5>
-                    <p>Your comprehensive platform for AI education and resources.</p>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5 class="mb-3 fw-bold">AI Learning Hub</h5>
+                    <p class="mb-0 text-secondary">Your comprehensive platform for AI education and resources.</p>
                 </div>
-                <div class="col-md-4">
-                    <h5>Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="{% url 'resources:resource_list' %}" class="text-light">Resources</a></li>
-                        <li><a href="{% url 'search:advanced_search' %}" class="text-light">Advanced Search</a></li>
-                        <li><a href="{% url 'github:repos' %}" class="text-light">GitHub Explorer</a></li>
-                        <li><a href="{% url 'chatbot:chat' %}" class="text-light">AI Assistant</a></li>
+                <div class="col-md-4 mb-4 mb-md-0 text-md-center">
+                    <h5 class="mb-3 fw-bold">Quick Links</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="{% url 'resources:resource_list' %}" class="text-light text-decoration-none">Resources</a></li>
+                        <li class="mb-2"><a href="{% url 'search:advanced_search' %}" class="text-light text-decoration-none">Advanced Search</a></li>
+                        <li class="mb-2"><a href="{% url 'github:repos' %}" class="text-light text-decoration-none">GitHub Explorer</a></li>
+                        <li class="mb-2"><a href="{% url 'chatbot:chat' %}" class="text-light text-decoration-none">AI Assistant</a></li>
                     </ul>
                 </div>
-                <div class="col-md-4">
-                    <h5>Connect With Us</h5>
-                    <div class="social-links">
-                        <a href="#" class="text-light me-2"><i class="fab fa-github"></i></a>
-                        <a href="#" class="text-light me-2"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-light me-2"><i class="fab fa-linkedin"></i></a>
+                <div class="col-md-4 text-md-end">
+                    <h5 class="mb-3 fw-bold">Connect With Us</h5>
+                    <div class="d-flex justify-content-md-end">
+                        <a href="#" class="text-light fs-4 me-4" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                        <a href="#" class="text-light fs-4 me-4" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-light fs-4" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
                     </div>
                 </div>
             </div>
-            <hr class="mt-4">
-            <div class="text-center">
-                <p class="mb-0">&copy; {% now "Y" %} AI Learning Hub. All rights reserved.</p>
-            </div>
+            <hr class="my-4 border-secondary">
+            <p class="text-center mb-0">&copy; {% now "Y" %} AI Learning Hub. All rights reserved.</p>
         </div>
     </footer>
 
