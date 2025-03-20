@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saved Resources - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Saved Resources</h1>
+    
+    {% if not saved_resources and not saved_videos %}
+    <div class="alert alert-info">
+        You haven't saved any resources yet. Start exploring and save resources you find helpful!
+    </div>
+    {% endif %}
+    
+    {% if saved_resources %}
+    <div class="mb-4">
+        <h2>Saved Articles & Resources</h2>
+        <div class="row">
+            {% for resource in saved_resources %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ resource.title }}</h5>
+                        <p class="card-text">{{ resource.description|truncatewords:30 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ resource.resource_type }}</span>
+                            <a href="{% url 'resources:resource_detail' resource.pk %}" class="btn btn-outline-primary">View</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if saved_videos %}
+    <div class="mb-4">
+        <h2>Saved Videos</h2>
+        <div class="row">
+            {% for video in saved_videos %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if video.thumbnail_url %}
+                    <img src="{{ video.thumbnail_url }}" class="card-img-top" alt="{{ video.title }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ video.title }}</h5>
+                        <p class="card-text">{{ video.description|truncatewords:30 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ video.platform }}</span>
+                            <a href="{% url 'resources:video_detail' video.pk %}" class="btn btn-outline-primary">Watch</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

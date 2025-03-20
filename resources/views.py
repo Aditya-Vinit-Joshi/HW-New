@@ -279,8 +279,14 @@ def my_resources(request):
 
 @login_required
 def saved_resources(request):
-    resources = request.user.saved_resources.all().order_by('-created_at')
-    return render(request, 'resources/saved_resources.html', {'resources': resources})
+    saved_resources = request.user.saved_resources.all()
+    saved_videos = request.user.saved_video_resources.all()
+    
+    context = {
+        'saved_resources': saved_resources,
+        'saved_videos': saved_videos,
+    }
+    return render(request, 'resources/saved_resources.html', context)
 
 
 @user_passes_test(is_admin)
@@ -425,4 +431,36 @@ def like_video(request, video_id):
         liked = True
     
     return JsonResponse({'liked': liked, 'count': video.likes.count()})
+
+def video_resource_detail(request, pk):
+    video = get_object_or_404(VideoResource, pk=pk)
+    
+    # Increment view count
+    video.views += 1
+    video.save(update_fields=['views'])
+    
+    # Show pending videos only to staff or the author
+    if not video.is_approved and (request.user != video.author and not request.user.is_staff):
+        messages.warning(request, 'This video is pending approval and is not publicly available yet.')
+        return redirect('resources:video_list')
+    
+    context = {
+        'video': video,
+        'is_liked': request.user in video.likes.all() if request.user.is_authenticated else False,
+        'is_saved': video in request.user.saved_video_resources.all() if request.user.is_authenticated else False,
+    }
+    return render(request, 'resources/video_detail.html', context)
+
+@login_required
+def save_video_resource(request, pk):
+    video = get_object_or_404(VideoResource, pk=pk)
+    
+    if video in request.user.saved_video_resources.all():
+        request.user.saved_video_resources.remove(video)
+        saved = False
+    else:
+        request.user.saved_video_resources.add(video)
+        saved = True
+    
+    return JsonResponse({'saved': saved})
 

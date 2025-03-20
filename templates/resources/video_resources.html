@@ -74,22 +74,19 @@
             {% for video in videos %}
                 <div class="col-md-4 mb-4">
                     <div class="card h-100 shadow-sm">
-                        {% if video.thumbnail_url %}
-                            <div class="position-relative">
-                                <img src="{{ video.thumbnail_url }}" class="card-img-top" alt="{{ video.title }}">
-                                <div class="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white p-1 m-2 rounded">
-                                    <small>{{ video.duration|default:'--' }}</small>
-                                </div>
-                                <div class="position-absolute top-0 start-0 bg-primary p-1 m-2 rounded">
-                                    <small>{{ video.get_platform_display }}</small>
-                                </div>
+                        <div class="position-relative">
+                            {% if video.thumbnail_url %}
+                                <img src="{{ video.thumbnail_url }}" class="card-img-top" alt="{{ video.title }}" style="height: 225px; object-fit: cover;">
+                            {% else %}
+                                <img src="https://ui-avatars.com/api/?name=AI+Video&background=2c3e50&color=fff&size=400" class="card-img-top" alt="Placeholder" style="height: 225px; object-fit: cover;">
+                            {% endif %}
+                            <div class="position-absolute bottom-0 end-0 bg-dark bg-opacity-75 text-white p-1 m-2 rounded">
+                                <small>{{ video.duration|default:'--' }}</small>
                             </div>
-                        {% else %}
-                            <div class="card-img-top text-center bg-secondary p-5 text-white">
-                                <i class="fas fa-video fa-3x"></i>
-                                <div class="mt-2">No Thumbnail</div>
+                            <div class="position-absolute top-0 start-0 bg-primary p-1 m-2 rounded">
+                                <small>{{ video.get_platform_display }}</small>
                             </div>
-                        {% endif %}
+                        </div>
                         
                         <div class="card-body">
                             <h5 class="card-title">{{ video.title }}</h5>
@@ -106,9 +103,6 @@
                                     <span class="badge bg-secondary">
                                         <i class="fas fa-eye"></i> {{ video.views }}
                                     </span>
-                                    <span class="badge bg-danger ms-1">
-                                        <i class="fas fa-heart"></i> {{ video.likes.count }}
-                                    </span>
                                 </div>
                                 <a href="{{ video.url }}" target="_blank" class="btn btn-sm btn-primary">
                                     <i class="fas fa-play-circle"></i> Watch
@@ -121,12 +115,14 @@
                             </small>
                             
                             {% if user.is_authenticated %}
-                            <button 
-                                class="btn btn-sm like-video-btn {% if user in video.likes.all %}btn-danger{% else %}btn-outline-danger{% endif %}"
-                                data-video-id="{{ video.id }}"
-                                title="Like this video">
-                                <i class="fas fa-heart"></i>
-                            </button>
+                            <div class="btn-group">
+                                <button 
+                                    class="btn btn-sm save-video-btn {% if user in video.saved_by_users.all %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                                    data-video-id="{{ video.id }}"
+                                    title="Save this video">
+                                    <i class="fas fa-bookmark"></i>
+                                </button>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -196,29 +192,43 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Handle like/unlike video
-    $('.like-video-btn').click(function() {
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Handle save/unsave video
+    $('.save-video-btn').click(function() {
         const videoId = $(this).data('video-id');
         const btn = $(this);
         
         $.ajax({
-            url: `/resources/like-video/${videoId}/`,
+            url: `/videos/${videoId}/save/`,
             type: 'POST',
             headers: {
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': getCookie('csrftoken')
             },
             success: function(response) {
-                if (response.liked) {
-                    btn.removeClass('btn-outline-danger').addClass('btn-danger');
+                if (response.saved) {
+                    btn.removeClass('btn-outline-primary').addClass('btn-primary');
                 } else {
-                    btn.removeClass('btn-danger').addClass('btn-outline-danger');
+                    btn.removeClass('btn-primary').addClass('btn-outline-primary');
                 }
-                
-                // Update like count in the badge
-                btn.closest('.card').find('.badge.bg-danger').html(`<i class="fas fa-heart"></i> ${response.count}`);
             },
             error: function(xhr, status, error) {
-                console.error('Error liking video:', error);
+                console.error('Error saving video:', error);
+                alert('Error saving video. Please try again.');
             }
         });
     });

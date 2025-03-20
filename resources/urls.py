@@ -19,7 +19,9 @@ urlpatterns = [
     path('my-resources/', views.my_resources, name='my_resources'),
     path('saved-resources/', views.saved_resources, name='saved_resources'),
     path('videos/', views.video_resources, name='video_resources'),
-    path('videos/<int:video_id>/like/', views.like_video, name='like_video'),
+    path('videos/<int:pk>/', views.video_resource_detail, name='video_detail'),
+    path('videos/<int:pk>/like/', views.like_video, name='like_video'),
+    path('videos/<int:pk>/save/', views.save_video_resource, name='save_video'),
 
     # Admin approval URLs - Changed to avoid conflict with Django admin
     path('moderate/resources/', views.admin_approval, name='admin_approval'),
