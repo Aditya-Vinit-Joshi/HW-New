@@ -29,9 +29,6 @@
                         <a class="nav-link" href="{% url 'resources:resource_list' %}">Resources</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'search:advanced_search' %}">Advanced Search</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'github:repos' %}">GitHub Explorer</a>
                     </li>
                     <li class="nav-item">
@@ -53,16 +50,28 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'resources:my_resources' %}">My Resources</a></li>
                                 <li><a class="dropdown-item" href="{% url 'resources:saved_resources' %}">Saved Resources</a></li>
+                                {% if user.is_staff or user.is_superuser %}
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'account_logout' %}">Logout</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin_resources' %}">
+                                    <i class="fas fa-shield-alt"></i> Resource Management
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'account_logout' %}">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+                            <a class="nav-link" href="{% url 'account_login' %}">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'account_signup' %}">Register</a>
+                            <a class="nav-link" href="{% url 'account_signup' %}">
+                                <i class="fas fa-user-plus"></i> Register
+                            </a>
                         </li>
                     {% endif %}
                 </ul>
@@ -74,7 +83,16 @@
     {% if messages %}
         <div class="container mt-3">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                <div class="alert {{ message.tags }} alert-dismissible fade show shadow-sm">
+                    {% if message.tags == 'alert-success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'alert-info' %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% elif message.tags == 'alert-warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'alert-danger' %}
+                        <i class="fas fa-times-circle me-2"></i>
+                    {% endif %}
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -99,8 +117,8 @@
                     <h5 class="mb-3 fw-bold">Quick Links</h5>
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2"><a href="{% url 'resources:resource_list' %}" class="text-light text-decoration-none">Resources</a></li>
-                        <li class="mb-2"><a href="{% url 'search:advanced_search' %}" class="text-light text-decoration-none">Advanced Search</a></li>
                         <li class="mb-2"><a href="{% url 'github:repos' %}" class="text-light text-decoration-none">GitHub Explorer</a></li>
+                        <li class="mb-2"><a href="{% url 'resources:video_resources' %}" class="text-light text-decoration-none">Video Resources</a></li>
                         <li class="mb-2"><a href="{% url 'chatbot:chat' %}" class="text-light text-decoration-none">AI Assistant</a></li>
                     </ul>
                 </div>

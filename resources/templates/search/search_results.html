@@ -16,11 +16,6 @@
                         <i class="fas fa-search"></i> Search
                     </button>
                 </div>
-                <div class="mt-2">
-                    <a href="{% url 'search:advanced_search' %}" class="text-decoration-none">
-                        <i class="fas fa-sliders-h"></i> Advanced Search
-                    </a>
-                </div>
             </form>
 
             <!-- Search Results -->
@@ -109,7 +104,7 @@
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
                         No resources found matching "{{ query }}".
-                        Try different keywords or use the advanced search for more options.
+                        Try different keywords or adjust your search criteria.
                     </div>
                 {% endif %}
             {% else %}
@@ -117,9 +112,7 @@
                     <i class="fas fa-search fa-3x text-muted mb-3"></i>
                     <h3>Start Your Search</h3>
                     <p class="text-muted">
-                        Enter keywords to search for AI learning resources
-                        <br>
-                        or use the advanced search for more filtering options.
+                        Enter keywords to search for AI learning resources.
                     </p>
                 </div>
             {% endif %}

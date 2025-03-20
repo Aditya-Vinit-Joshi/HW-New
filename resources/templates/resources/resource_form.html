@@ -38,6 +38,13 @@
                     <h2 class="mb-0">{{ action }} Resource</h2>
                 </div>
                 <div class="card-body">
+                    {% if action == 'Create' %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle"></i> Your submission will be reviewed by moderators before being published. 
+                        This helps maintain high-quality content for all users.
+                    </div>
+                    {% endif %}
+                    
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
                         

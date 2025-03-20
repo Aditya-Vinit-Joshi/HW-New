@@ -4,10 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 
 from django.db.models import Avg, Q, Count
-from .models import Resource, Category, Comment, Rating
-from django.db.models import Avg, Q
 from .models import Resource, Category, Comment, Rating, VideoResource
-
 from .forms import ResourceForm, CommentForm, RatingForm
 from django.http import JsonResponse
 
@@ -92,7 +89,41 @@ def resource_list(request):
     return render(request, 'resources/resource_list.html', context)
 
 def resource_detail(request, pk):
-    return render(request, pk)
+    resource = get_object_or_404(Resource, pk=pk)
+    
+    # Increment view count
+    resource.views += 1
+    resource.save(update_fields=['views'])
+    
+    # Get comments and ratings
+    comments = resource.comments.all().order_by('-created_at')
+    ratings = resource.ratings.all()
+    avg_rating = ratings.aggregate(Avg('rating'))['rating__avg']
+    
+    # Check if the user has already rated the resource
+    user_rating = None
+    if request.user.is_authenticated:
+        try:
+            user_rating = Rating.objects.get(resource=resource, user=request.user)
+        except Rating.DoesNotExist:
+            pass
+    
+    # Show pending resources only to staff or the author
+    if not resource.is_approved and (request.user != resource.author and not request.user.is_staff):
+        messages.warning(request, 'This resource is pending approval and is not publicly available yet.')
+        return redirect('resources:resource_list')
+    
+    context = {
+        'resource': resource,
+        'comments': comments,
+        'comment_form': CommentForm(),
+        'rating_form': RatingForm(),
+        'avg_rating': avg_rating,
+        'user_rating': user_rating,
+        'is_liked': request.user in resource.likes.all() if request.user.is_authenticated else False,
+        'is_saved': resource in request.user.saved_resources.all() if request.user.is_authenticated else False,
+    }
+    return render(request, 'resources/resource_detail.html', context)
 
 @login_required
 def resource_create(request):
@@ -101,6 +132,9 @@ def resource_create(request):
         if form.is_valid():
             resource = form.save(commit=False)
             resource.author = request.user
+            # Explicitly set approval status - new resources need admin review
+            resource.is_approved = False
+            resource.is_rejected = False
             resource.save()
             form.save_m2m()  # Save tags
             messages.success(request, 'Resource submitted successfully! It will be reviewed by moderators.')
@@ -251,21 +285,38 @@ def saved_resources(request):
 
 @user_passes_test(is_admin)
 def admin_approval(request):
+    # Count resources by status
+    pending_count = Resource.objects.filter(is_approved=False, is_rejected=False).count()
+    approved_count = Resource.objects.filter(is_approved=True).count()
+    rejected_count = Resource.objects.filter(is_rejected=True).count()
+    total_count = Resource.objects.count()
+    
+    # Check if JSON format is requested (for admin dashboard)
+    if request.GET.get('format') == 'json':
+        return JsonResponse({
+            'pending_count': pending_count,
+            'approved_count': approved_count,
+            'rejected_count': rejected_count,
+            'total_count': total_count,
+        })
+    
     filter_type = request.GET.get('filter', 'pending')
     
     if filter_type == 'pending':
         resources = Resource.objects.filter(is_approved=False, is_rejected=False)
+        filter_message = "Showing pending resources awaiting review"
     elif filter_type == 'approved':
         resources = Resource.objects.filter(is_approved=True)
+        filter_message = "Showing approved resources"
     elif filter_type == 'rejected':
         resources = Resource.objects.filter(is_rejected=True)
-    else:
+        filter_message = "Showing rejected resources"
+    else:  # 'all' filter or any other value
         resources = Resource.objects.all()
+        filter_message = "Showing all resources"
     
+    # Sort by newest first
     resources = resources.order_by('-created_at')
-    
-    # Count pending resources
-    pending_count = Resource.objects.filter(is_approved=False, is_rejected=False).count()
     
     # Pagination
     paginator = Paginator(resources, 20)  # Show 20 resources per page
@@ -278,7 +329,11 @@ def admin_approval(request):
     context = {
         'resources': resources,
         'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'total_count': total_count,
         'filter': filter_type,
+        'filter_message': filter_message,
         'is_paginated': paginator.num_pages > 1,
         'page_obj': resources,
     }
@@ -306,52 +361,61 @@ def reject_resource(request, pk):
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
 
+@login_required
 def video_resources(request):
-    # Get filter parameters
-    platform = request.GET.get('platform', '')
-    category = request.GET.get('category', '')
-    search_query = request.GET.get('q', '')
-    
-    # Start with all approved video resources
     videos = VideoResource.objects.filter(is_approved=True)
     
-    # Apply filters
+    # Filter by platform
+    platform = request.GET.get('platform')
     if platform:
         videos = videos.filter(platform=platform)
-    if category:
-        videos = videos.filter(category__slug=category)
-    if search_query:
+    
+    # Filter by category
+    category_id = request.GET.get('category')
+    if category_id:
+        videos = videos.filter(category_id=category_id)
+        
+    # Filter by search query
+    query = request.GET.get('q')
+    if query:
         videos = videos.filter(
-            Q(title__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(tags__name__icontains=search_query)
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(tags__name__icontains=query) |
+            Q(instructor__icontains=query)
         ).distinct()
     
-    # Get all categories for the filter dropdown
-    categories = Category.objects.all()
+    # Sort videos
+    sort_by = request.GET.get('sort', '-created_at')
+    videos = videos.order_by(sort_by)
     
-    # Get unique platforms for the filter dropdown
-    platforms = VideoResource.PLATFORMS
-    
-    # Paginate results
+    # Pagination
     paginator = Paginator(videos, 12)  # Show 12 videos per page
-    page = request.GET.get('page')
-    videos = paginator.get_page(page)
+    page = request.GET.get('page', 1)
+    try:
+        videos = paginator.page(page)
+    except:
+        videos = paginator.page(1)
+    
+    # Get all categories and video platforms for the filter form
+    categories = Category.objects.all()
     
     context = {
         'videos': videos,
         'categories': categories,
-        'platforms': platforms,
-        'selected_platform': platform,
-        'selected_category': category,
-        'search_query': search_query,
+        'platforms': VideoResource.PLATFORMS,
+        'current_platform': platform,
+        'current_category': category_id,
+        'current_sort': sort_by,
+        'query': query,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': videos,
     }
-    
     return render(request, 'resources/video_resources.html', context)
 
 @login_required
 def like_video(request, video_id):
-    video = get_object_or_404(VideoResource, id=video_id)
+    video = get_object_or_404(VideoResource, pk=video_id)
     
     if request.user in video.likes.all():
         video.likes.remove(request.user)
@@ -360,5 +424,5 @@ def like_video(request, video_id):
         video.likes.add(request.user)
         liked = True
     
-    return JsonResponse({'liked': liked})
+    return JsonResponse({'liked': liked, 'count': video.likes.count()})
 

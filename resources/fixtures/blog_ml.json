@@ -1,0 +1,11 @@
+[
+    {
+        "model": "resources.category",
+        "pk": 1,
+        "fields": {
+            "name": "Machine Learning",
+            "description": "Resources related to machine learning algorithms, techniques, and applications",
+            "slug": "machine-learning"
+        }
+    }
+] 

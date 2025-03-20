@@ -1,0 +1,11 @@
+[
+    {
+        "model": "resources.category",
+        "pk": 2,
+        "fields": {
+            "name": "Artificial Intelligence",
+            "description": "Resources related to artificial intelligence, including general AI concepts, theories, and applications",
+            "slug": "artificial-intelligence"
+        }
+    }
+] 

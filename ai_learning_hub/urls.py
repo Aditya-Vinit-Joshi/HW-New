@@ -18,12 +18,19 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from resources.views import admin_approval
+from django.views.generic import TemplateView
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('resources.urls')),
+    path('accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),
     path('search/', include('search.urls')),
     path('chatbot/', include('chatbot.urls')),
     path('github/', include('github.urls')),
+    # Direct path to admin resources landing page
+    path('admin-resources/', staff_member_required(TemplateView.as_view(template_name='admin_resources.html')), name='admin_resources'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

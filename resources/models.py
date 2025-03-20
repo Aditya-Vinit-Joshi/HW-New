@@ -36,6 +36,7 @@ class Resource(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     tags = TaggableManager()
     is_approved = models.BooleanField(default=False)
+    is_rejected = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
     likes = models.ManyToManyField(User, related_name='liked_resources', blank=True)
     
@@ -85,6 +86,7 @@ class VideoResource(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     tags = TaggableManager()
     is_approved = models.BooleanField(default=False)
+    is_rejected = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
     likes = models.ManyToManyField(User, related_name='liked_videos', blank=True)
     

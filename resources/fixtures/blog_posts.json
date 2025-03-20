@@ -1,0 +1,70 @@
+[
+    {
+        "model": "resources.resource",
+        "pk": 101,
+        "fields": {
+            "title": "Optimizing Neural Network Architectures for Improved AI Efficiency",
+            "description": "A deep dive into optimizing neural network architectures for better efficiency and scalability in AI applications.",
+            "url": "https://medium.com/tag/artificial-intelligence/latest",
+            "resource_type": "blog",
+            "category": 2,
+            "author": 1,
+            "created_at": "2024-03-20T03:14:03Z",
+            "updated_at": "2024-03-20T03:14:03Z",
+            "is_approved": true,
+            "is_rejected": false,
+            "views": 120
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 102,
+        "fields": {
+            "title": "The Future of Agile: How AI is Transforming Agile",
+            "description": "An exploration of how artificial intelligence is changing agile methodologies and improving collaboration, adaptation, and value delivery.",
+            "url": "https://medium.com/tag/artificial-intelligence/latest",
+            "resource_type": "blog",
+            "category": 2,
+            "author": 1,
+            "created_at": "2024-03-20T02:56:23Z",
+            "updated_at": "2024-03-20T02:56:23Z",
+            "is_approved": true,
+            "is_rejected": false,
+            "views": 85
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 103,
+        "fields": {
+            "title": "This Trading Strategy Is A Destroyer",
+            "description": "A simple yet effective trading strategy powered by machine learning algorithms.",
+            "url": "https://medium.com/tag/machine-learning/latest",
+            "resource_type": "blog",
+            "category": 1,
+            "author": 1,
+            "created_at": "2024-03-20T03:02:38Z",
+            "updated_at": "2024-03-20T03:02:38Z",
+            "is_approved": true,
+            "is_rejected": false,
+            "views": 230
+        }
+    },
+    {
+        "model": "resources.resource",
+        "pk": 104,
+        "fields": {
+            "title": "ML Pipeline Best Practices Interview Questions and Answers",
+            "description": "A comprehensive guide to machine learning pipeline best practices with interview questions and detailed answers.",
+            "url": "https://medium.com/tag/machine-learning/latest",
+            "resource_type": "blog",
+            "category": 1,
+            "author": 1,
+            "created_at": "2024-03-20T02:26:21Z",
+            "updated_at": "2024-03-20T02:26:21Z",
+            "is_approved": true,
+            "is_rejected": false,
+            "views": 150
+        }
+    }
+] 

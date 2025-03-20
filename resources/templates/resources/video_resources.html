@@ -4,208 +4,289 @@
 {% block title %}Video Resources - AI Learning Hub{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row">
-        <div class="col-12">
-            <h1 class="mb-4">AI/ML Video Resources</h1>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>AI/ML Video Resources</h1>
+    </div>
 
-            <!-- Search and Filter Section -->
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-md-3">
             <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filter Videos</h5>
+                </div>
                 <div class="card-body">
-                    <form method="get" class="row g-3">
-                        <div class="col-md-4">
-                            <input type="text" name="q" class="form-control" placeholder="Search videos..." value="{{ search_query }}">
+                    <form method="GET" id="filter-form">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="q" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="q" name="q" value="{% if query and query != 'None' %}{{ query }}{% endif %}" placeholder="Search videos...">
                         </div>
-                        <div class="col-md-3">
-                            <select name="platform" class="form-select">
-                                <option value="">All Platforms</option>
-                                {% for platform_code, platform_name in platforms %}
-                                <option value="{{ platform_code }}" {% if selected_platform == platform_code %}selected{% endif %}>
-                                    {{ platform_name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select name="category" class="form-select">
+
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
                                 <option value="">All Categories</option>
                                 {% for cat in categories %}
-                                <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>
-                                    {{ cat.name }}
-                                </option>
+                                    <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ cat.name }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+
+                        <!-- Platform Filter -->
+                        <div class="mb-3">
+                            <label for="platform" class="form-label">Platform</label>
+                            <select class="form-select" id="platform" name="platform">
+                                <option value="">All Platforms</option>
+                                {% for platform_value, platform_label in platforms %}
+                                    <option value="{{ platform_value }}" {% if current_platform == platform_value %}selected{% endif %}>
+                                        {{ platform_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
+
+                        <!-- Sort Options -->
+                        <div class="mb-3">
+                            <label for="sort" class="form-label">Sort By</label>
+                            <select class="form-select" id="sort" name="sort">
+                                <option value="-created_at" {% if current_sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                                <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                                <option value="-views" {% if current_sort == '-views' %}selected{% endif %}>Most Viewed</option>
+                                <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Title (A-Z)</option>
+                                <option value="-title" {% if current_sort == '-title' %}selected{% endif %}>Title (Z-A)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+
+                        {% if request.GET %}
+                            <a href="{% url 'resources:video_resources' %}" class="btn btn-outline-secondary w-100 mt-2">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
+        </div>
 
-            <!-- Video Grid -->
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for video in videos %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        {% if video.thumbnail_url %}
-                        <img src="{{ video.thumbnail_url }}" class="card-img-top" alt="{{ video.title }}">
-                        {% else %}
-                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                            <i class="fas fa-play-circle fa-3x text-muted"></i>
-                        </div>
-                        {% endif %}
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title mb-0">
-                                    <a href="{{ video.url }}" target="_blank" class="text-decoration-none">
-                                        {{ video.title }}
-                                    </a>
-                                </h5>
-                                <span class="badge bg-primary">{{ video.platform|title }}</span>
-                            </div>
-                            <p class="card-text text-muted small">{{ video.description|truncatechars:150 }}</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="stats">
-                                    {% if video.duration %}
-                                    <span class="badge bg-secondary me-2">
-                                        <i class="fas fa-clock me-1"></i>{{ video.duration }}
-                                    </span>
-                                    {% endif %}
-                                    {% if video.instructor %}
-                                    <span class="badge bg-info">
-                                        <i class="fas fa-user me-1"></i>{{ video.instructor }}
-                                    </span>
-                                    {% endif %}
+        <!-- Videos Grid -->
+        <div class="col-md-9">
+            {% if videos %}
+                <div class="row">
+                    {% for video in videos %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                {% if video.thumbnail_url %}
+                                <div class="video-thumbnail position-relative">
+                                    <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}" class="card-img-top">
+                                    <div class="duration position-absolute px-2 py-1 bg-dark text-white rounded-pill" style="bottom: 10px; right: 10px;">
+                                        {{ video.duration|default:"" }}
+                                    </div>
                                 </div>
-                                <button class="btn btn-outline-primary btn-sm like-btn" data-video-id="{{ video.id }}">
-                                    <i class="fas fa-heart {% if request.user in video.likes.all %}text-danger{% endif %}"></i>
-                                </button>
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a href="{{ video.url }}" class="text-decoration-none" target="_blank">
+                                            {{ video.title }}
+                                        </a>
+                                    </h5>
+                                    <p class="card-text">{{ video.description|truncatewords:20 }}</p>
+                                    
+                                    {% if video.tags.all %}
+                                        <div class="mb-3">
+                                            {% for tag in video.tags.all %}
+                                                <span class="badge bg-secondary">{{ tag.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="meta-info">
+                                        <small class="text-muted">
+                                            {% if video.instructor %}
+                                            <i class="fas fa-user"></i> {{ video.instructor }}
+                                            <span class="mx-2">•</span>
+                                            {% endif %}
+                                            <i class="fas fa-eye"></i> {{ video.views }} views
+                                            <span class="mx-2">•</span>
+                                            <i class="fas fa-heart{% if user.is_authenticated and user in video.likes.all %}{% else %}-o{% endif %}"></i> 
+                                            <span class="likes-count">{{ video.likes.count }}</span> likes
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fab fa-{{ video.platform }}"></i> {{ video.get_platform_display }}
+                                        </small>
+                                        {% if user.is_authenticated %}
+                                            <button class="btn btn-sm btn-outline-danger like-video-btn" 
+                                                    data-video-id="{{ video.id }}"
+                                                    data-liked="{% if user in video.likes.all %}true{% else %}false{% endif %}">
+                                                <i class="fas fa-heart{% if user in video.likes.all %}{% else %}-o{% endif %}"></i>
+                                                <span class="like-text">
+                                                    {% if user in video.likes.all %}Liked{% else %}Like{% endif %}
+                                                </span>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-footer bg-transparent">
-                            <div class="d-flex flex-wrap gap-1">
-                                {% for tag in video.tags.all %}
-                                <span class="badge bg-light text-dark">{{ tag.name }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        No videos found matching your criteria.
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- Pagination -->
-            {% if videos.has_other_pages %}
-            <nav aria-label="Video pagination" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if videos.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ videos.previous_page_number }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}">Previous</a>
-                    </li>
-                    {% endif %}
-
-                    {% for num in videos.paginator.page_range %}
-                    <li class="page-item {% if videos.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}">{{ num }}</a>
-                    </li>
                     {% endfor %}
+                </div>
 
-                    {% if videos.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ videos.next_page_number }}&platform={{ selected_platform }}&category={{ selected_category }}&q={{ search_query }}">Next</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <nav aria-label="Video pages" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.platform %}&platform={{ request.GET.platform }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.platform %}&platform={{ request.GET.platform }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                                </li>
+                            {% endif %}
+
+                            {% with ''|center:page_obj.paginator.num_pages as range %}
+                                {% for _ in range %}
+                                    {% with forloop.counter as i %}
+                                        {% if page_obj.number == i %}
+                                            <li class="page-item active d-none d-md-block">
+                                                <span class="page-link">{{ i }}</span>
+                                            </li>
+                                        {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                                            <li class="page-item d-none d-md-block">
+                                                <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.platform %}&platform={{ request.GET.platform }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                                    {{ i }}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endwith %}
+
+                            <li class="page-item disabled d-block d-md-none">
+                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.platform %}&platform={{ request.GET.platform }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.platform %}&platform={{ request.GET.platform }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No videos found matching your criteria.
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
-
-<style>
-.card {
-    transition: transform 0.2s;
-}
-.card:hover {
-    transform: translateY(-5px);
-}
-.card-title a {
-    color: inherit;
-}
-.card-title a:hover {
-    color: #0d6efd;
-}
-.card-img-top {
-    height: 200px;
-    object-fit: cover;
-}
-.badge {
-    font-weight: 500;
-}
-.like-btn {
-    padding: 0.25rem 0.5rem;
-}
-.like-btn i {
-    transition: transform 0.2s;
-}
-.like-btn:hover i {
-    transform: scale(1.2);
-}
-</style>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const likeButtons = document.querySelectorAll('.like-btn');
-    
-    likeButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const videoId = this.dataset.videoId;
-            const icon = this.querySelector('i');
-            
-            fetch(`/resources/like-video/${videoId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.liked) {
-                    icon.classList.add('text-danger');
+$(document).ready(function() {
+    // Add debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
+    // Auto-submit form when sort, platform, or category changes
+    $('#sort, #platform, #category').change(function() {
+        $(this).closest('form').submit();
+    });
+
+    // Auto-submit form when search input changes (with debounce)
+    $('#q').on('input', debounce(function() {
+        $(this).closest('form').submit();
+    }, 500));
+
+    // Handle like functionality
+    $('.like-video-btn').click(function() {
+        const btn = $(this);
+        const videoId = btn.data('video-id');
+        const liked = btn.data('liked') === true;
+
+        $.ajax({
+            url: `/resources/videos/${videoId}/like/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.liked) {
+                    btn.find('i').removeClass('fa-heart-o').addClass('fa-heart');
+                    btn.find('.like-text').text('Liked');
                 } else {
-                    icon.classList.remove('text-danger');
+                    btn.find('i').removeClass('fa-heart').addClass('fa-heart-o');
+                    btn.find('.like-text').text('Like');
                 }
-            })
-            .catch(error => console.error('Error:', error));
+                btn.data('liked', response.liked);
+                
+                // Update likes count
+                btn.closest('.card').find('.likes-count').text(response.count);
+            }
         });
     });
-});
 
-// Function to get CSRF token from cookies
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
+});
 </script>
-{% endblock %}
 {% endblock %} 

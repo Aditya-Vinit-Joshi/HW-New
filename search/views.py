@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db.models import Q
 from resources.models import Resource
 from django.core.paginator import Paginator
@@ -28,11 +28,8 @@ def search_view(request):
     return render(request, 'search/search_results.html', context)
 
 def advanced_search(request):
-    context = {
-        'categories': Resource.objects.values_list('category', flat=True).distinct(),
-        'tags': Resource.objects.values_list('tags__name', flat=True).distinct(),
-    }
-    return render(request, 'search/advanced_search.html', context)
+    # Redirect to resources list instead of showing advanced search
+    return redirect('resources:resource_list')
 
 def search_results(request):
     query = request.GET.get('q', '')

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Password Reset Test Links" %} - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h2 class="card-title mb-0">Password Reset Flow Test Links</h2>
+        </div>
+        <div class="card-body">
+          <h4>Standard Django-Allauth Password Reset Links</h4>
+          <ul class="list-group mb-4">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Password Reset (Initial Form)
+              <a href="{% url 'account_reset_password' %}" class="btn btn-sm btn-outline-primary">Go</a>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Password Reset Done (Email Sent)
+              <a href="{% url 'account_reset_password_done' %}" class="btn btn-sm btn-outline-primary">Go</a>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Password Reset from Key (Will fail without token)
+              <a href="#" class="btn btn-sm btn-outline-secondary" disabled>Requires Token</a>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              Password Reset Complete
+              <a href="{% url 'account_reset_password_from_key_done' %}" class="btn btn-sm btn-outline-primary">Go</a>
+            </li>
+          </ul>
+          
+          <div class="alert alert-info">
+            <p><strong>Full Flow:</strong></p>
+            <ol>
+              <li>User clicks "Forgot Password?" on login page</li>
+              <li>User enters email address in reset form</li>
+              <li>System shows "Email Sent" confirmation page</li>
+              <li>User clicks link in email and sets new password</li>
+              <li>System shows "Password Reset Complete" confirmation</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 
