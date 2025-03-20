@@ -1,295 +1,167 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Resource Approval - AI Learning Hub{% endblock %}
+{% block title %}Admin Resource Approval - AI Learning Hub{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'css/admin.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4 admin-approval">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <a href="{% url 'admin_resources' %}" class="btn btn-outline-primary mb-2">
-                <i class="fas fa-arrow-left"></i> Back to Admin Dashboard
-            </a>
-            <h1>Resource Approval</h1>
-        </div>
-        <div class="btn-group filter-buttons" role="group">
-            <button type="button" class="btn btn-outline-primary {% if filter == 'pending' %}active{% endif %}" data-filter="pending">
-                Pending ({{ pending_count }})
-            </button>
-            <button type="button" class="btn btn-outline-success {% if filter == 'approved' %}active{% endif %}" data-filter="approved">
-                Approved ({{ approved_count }})
-            </button>
-            <button type="button" class="btn btn-outline-danger {% if filter == 'rejected' %}active{% endif %}" data-filter="rejected">
-                Rejected ({{ rejected_count }})
-            </button>
-            <button type="button" class="btn btn-outline-secondary {% if filter == 'all' %}active{% endif %}" data-filter="all">
-                All ({{ total_count }})
-            </button>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Resource Approval Dashboard</h2>
+                    <div class="btn-group">
+                        <a href="?filter=pending" class="btn btn-outline-primary {% if filter == 'pending' %}active{% endif %}">
+                            Pending ({{ pending_count }})
+                        </a>
+                        <a href="?filter=rejected" class="btn btn-outline-danger {% if filter == 'rejected' %}active{% endif %}">
+                            Rejected ({{ rejected_count }})
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> {{ filter_message }}
+                    </div>
+
+                    {% if resources %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Author</th>
+                                        <th>Category</th>
+                                        <th>Type</th>
+                                        <th>Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in resources %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'resources:resource_detail' resource.pk %}" target="_blank">
+                                                    {{ resource.title }}
+                                                </a>
+                                            </td>
+                                            <td>{{ resource.author.username }}</td>
+                                            <td>{{ resource.category.name }}</td>
+                                            <td>{{ resource.get_resource_type_display }}</td>
+                                            <td>{{ resource.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if not resource.is_rejected %}
+                                                    <button class="btn btn-success btn-sm approve-resource" data-resource-id="{{ resource.pk }}">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                {% endif %}
+                                                <button class="btn btn-danger btn-sm reject-resource" data-resource-id="{{ resource.pk }}">
+                                                    <i class="fas fa-times"></i> Reject
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if is_paginated %}
+                            <nav aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&filter={{ filter }}">
+                                                Previous
+                                            </a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                            <a class="page-link" href="?page={{ num }}&filter={{ filter }}">{{ num }}</a>
+                                        </li>
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&filter={{ filter }}">
+                                                Next
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No resources found.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
-
-    {% if filter_message %}
-        <div class="alert alert-info mb-4">
-            <i class="fas fa-info-circle"></i> {{ filter_message }}
-        </div>
-    {% endif %}
-
-    {% if resources %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Title</th>
-                        <th>Type</th>
-                        <th>Category</th>
-                        <th>Author</th>
-                        <th>Submitted</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for resource in resources %}
-                        <tr class="{% if not resource.is_approved and not resource.is_rejected %}resource-pending{% elif resource.is_approved %}resource-approved{% elif resource.is_rejected %}resource-rejected{% endif %}">
-                            <td>
-                                <a href="{{ resource.url }}" target="_blank" class="text-decoration-none">
-                                    {{ resource.title }}
-                                </a>
-                            </td>
-                            <td>{{ resource.get_resource_type_display }}</td>
-                            <td>{{ resource.category.name }}</td>
-                            <td>{{ resource.author }}</td>
-                            <td>{{ resource.created_at|date:"M d, Y" }}</td>
-                            <td>
-                                <span class="badge {% if resource.is_approved %}bg-success{% elif resource.is_rejected %}bg-danger{% else %}bg-warning{% endif %}">
-                                    {% if resource.is_approved %}
-                                        Approved
-                                    {% elif resource.is_rejected %}
-                                        Rejected
-                                    {% else %}
-                                        Pending
-                                    {% endif %}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#resourceModal{{ resource.id }}">
-                                        <i class="fas fa-eye"></i> View
-                                    </button>
-                                    {% if not resource.is_approved and not resource.is_rejected %}
-                                        <button type="button" class="btn btn-sm btn-success approve-btn" data-resource-id="{{ resource.id }}">
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-danger reject-btn" data-resource-id="{{ resource.id }}">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Resource Details Modal -->
-                        <div class="modal fade" id="resourceModal{{ resource.id }}" tabindex="-1">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Resource Details</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <h4>{{ resource.title }}</h4>
-                                        <p class="text-muted">
-                                            Submitted by {{ resource.author }} on {{ resource.created_at|date:"F j, Y" }}
-                                        </p>
-                                        <hr>
-                                        <h5>Description</h5>
-                                        <p>{{ resource.description }}</p>
-                                        <h5>URL</h5>
-                                        <p><a href="{{ resource.url }}" target="_blank">{{ resource.url }}</a></p>
-                                        <h5>Tags</h5>
-                                        <p>
-                                            {% for tag in resource.tags.all %}
-                                                <span class="badge bg-secondary">{{ tag.name }}</span>
-                                            {% endfor %}
-                                        </p>
-                                    </div>
-                                    <div class="modal-footer">
-                                        {% if not resource.is_approved and not resource.is_rejected %}
-                                            <button type="button" class="btn btn-success approve-btn" data-resource-id="{{ resource.id }}">
-                                                <i class="fas fa-check"></i> Approve
-                                            </button>
-                                            <button type="button" class="btn btn-danger reject-btn" data-resource-id="{{ resource.id }}">
-                                                <i class="fas fa-times"></i> Reject
-                                            </button>
-                                        {% endif %}
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if is_paginated %}
-            <nav aria-label="Resource approval pages" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?filter={{ filter }}&page=1">
-                                <i class="fas fa-angle-double-left"></i>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?filter={{ filter }}&page={{ page_obj.previous_page_number }}">
-                                <i class="fas fa-angle-left"></i>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="fas fa-angle-left"></i></span>
-                        </li>
-                    {% endif %}
-
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?filter={{ filter }}&page={{ num }}">{{ num }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?filter={{ filter }}&page={{ page_obj.next_page_number }}">
-                                <i class="fas fa-angle-right"></i>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?filter={{ filter }}&page={{ page_obj.paginator.num_pages }}">
-                                <i class="fas fa-angle-double-right"></i>
-                            </a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="fas fa-angle-right"></i></span>
-                        </li>
-                        <li class="page-item disabled">
-                            <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
-    {% else %}
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> No resources found matching the selected filter.
-        </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Handle filter buttons
-    $('.btn-group[role="group"] button').click(function() {
-        const filter = $(this).data('filter');
-        window.location.href = `?filter=${filter}`;
+    // Handle approve button click
+    $('.approve-resource').click(function() {
+        var resourceId = $(this).data('resource-id');
+        var button = $(this);
+        
+        if (confirm('Are you sure you want to approve this resource?')) {
+            $.ajax({
+                url: '/resources/' + resourceId + '/approve/',
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        button.closest('tr').fadeOut();
+                    } else {
+                        alert('Error approving resource.');
+                    }
+                },
+                error: function() {
+                    alert('Error approving resource.');
+                }
+            });
+        }
     });
 
-    // Handle approve/reject buttons
-    $('.approve-btn, .reject-btn').click(function() {
-        const btn = $(this);
-        const resourceId = btn.data('resource-id');
-        const action = btn.hasClass('approve-btn') ? 'approve' : 'reject';
-
-        // Disable the button to prevent multiple clicks
-        btn.prop('disabled', true);
+    // Handle reject button click
+    $('.reject-resource').click(function() {
+        var resourceId = $(this).data('resource-id');
+        var button = $(this);
         
-        // Determine the correct URL based on action
-        let url = '';
-        if (action === 'approve') {
-            url = "{% url 'resources:approve_resource' pk=0 %}".replace('0', resourceId);
-        } else {
-            url = "{% url 'resources:reject_resource' pk=0 %}".replace('0', resourceId);
-        }
-        
-        $.ajax({
-            url: url,
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Show success message
-                    const actionText = action === 'approve' ? 'approved' : 'rejected';
-                    const alertHtml = `<div class="alert alert-success alert-dismissible fade show mt-3">
-                        <i class="fas fa-check-circle"></i> Resource has been ${actionText} successfully.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>`;
-                    
-                    // Add alert before the table
-                    $('.table-responsive').before(alertHtml);
-                    
-                    // Reload the page after a short delay
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    // Enable the button again if there was an error
-                    btn.prop('disabled', false);
-                    
-                    // Show error message
-                    const alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3">
-                        <i class="fas fa-times-circle"></i> Error: Could not ${action} the resource.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>`;
-                    
-                    // Add alert before the table
-                    $('.table-responsive').before(alertHtml);
+        if (confirm('Are you sure you want to reject this resource?')) {
+            $.ajax({
+                url: '/resources/' + resourceId + '/reject/',
+                method: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        button.closest('tr').fadeOut();
+                    } else {
+                        alert('Error rejecting resource.');
+                    }
+                },
+                error: function() {
+                    alert('Error rejecting resource.');
                 }
-            },
-            error: function() {
-                // Enable the button again
-                btn.prop('disabled', false);
-                
-                // Show error message
-                const alertHtml = `<div class="alert alert-danger alert-dismissible fade show mt-3">
-                    <i class="fas fa-times-circle"></i> Error: Could not connect to the server.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`;
-                
-                // Add alert before the table
-                $('.table-responsive').before(alertHtml);
-            }
-        });
+            });
+        }
     });
-
-    // Function to get CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
 });
 </script>
 {% endblock %} 

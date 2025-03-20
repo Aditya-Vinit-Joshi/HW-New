@@ -8,10 +8,6 @@ class ResourceForm(forms.ModelForm):
         self.fields['category'].queryset = Category.objects.filter(
             name__in=['Artificial Intelligence', 'Machine Learning']
         )
-        # Remove 'github' from resource_type choices
-        self.fields['resource_type'].choices = [
-            choice for choice in Resource.RESOURCE_TYPES if choice[0] != 'github'
-        ]
         
     class Meta:
         model = Resource

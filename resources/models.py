@@ -17,9 +17,6 @@ class Category(models.Model):
 
 class Resource(models.Model):
     RESOURCE_TYPES = [
-        ('tutorial', 'Tutorial'),
-        ('course', 'Course'),
-        ('documentation', 'Documentation'),
         ('research', 'Research Paper'),
         ('github', 'GitHub Repository'),
         ('blog', 'Blog Post'),
@@ -89,6 +86,12 @@ class VideoResource(models.Model):
     is_rejected = models.BooleanField(default=False)
     views = models.PositiveIntegerField(default=0)
     likes = models.ManyToManyField(User, related_name='liked_videos', blank=True)
+    
+    @property
+    def get_thumbnail_url(self):
+        if self.thumbnail_url:
+            return self.thumbnail_url
+        return '/static/images/video-placeholder.jpg'  # Default placeholder image
     
     def __str__(self):
         return self.title

@@ -26,6 +26,11 @@
         border-radius: 0.2rem;
         display: inline-block;
     }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
 </style>
 {% endblock %}
 
@@ -38,6 +43,15 @@
                     <h2 class="mb-0">{{ action }} Resource</h2>
                 </div>
                 <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
                     {% if action == 'Create' %}
                     <div class="alert alert-info mb-4">
                         <i class="fas fa-info-circle"></i> Your submission will be reviewed by moderators before being published. 
@@ -45,7 +59,7 @@
                     </div>
                     {% endif %}
                     
-                    <form method="post" class="needs-validation" novalidate>
+                    <form method="post" class="needs-validation" novalidate id="resourceForm">
                         {% csrf_token %}
                         
                         {% if form.non_field_errors %}
@@ -60,7 +74,7 @@
                             <label for="{{ form.title.id_for_label }}" class="form-label">Title *</label>
                             {{ form.title }}
                             {% if form.title.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.title.errors }}
                                 </div>
                             {% endif %}
@@ -70,7 +84,7 @@
                             <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
                             {{ form.description }}
                             {% if form.description.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.description.errors }}
                                 </div>
                             {% endif %}
@@ -81,7 +95,7 @@
                             <label for="{{ form.url.id_for_label }}" class="form-label">URL *</label>
                             {{ form.url }}
                             {% if form.url.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.url.errors }}
                                 </div>
                             {% endif %}
@@ -91,7 +105,7 @@
                             <label for="{{ form.resource_type.id_for_label }}" class="form-label">Resource Type *</label>
                             {{ form.resource_type }}
                             {% if form.resource_type.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.resource_type.errors }}
                                 </div>
                             {% endif %}
@@ -101,7 +115,7 @@
                             <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
                             {{ form.category }}
                             {% if form.category.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.category.errors }}
                                 </div>
                             {% endif %}
@@ -111,7 +125,7 @@
                             <label for="{{ form.tags.id_for_label }}" class="form-label">Tags</label>
                             {{ form.tags }}
                             {% if form.tags.errors %}
-                                <div class="invalid-feedback d-block">
+                                <div class="error-message">
                                     {{ form.tags.errors }}
                                 </div>
                             {% endif %}
@@ -123,7 +137,7 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
                                 <i class="fas fa-save"></i> Submit Resource
                             </button>
                             <a href="{% url 'resources:resource_list' %}" class="btn btn-outline-secondary">
@@ -150,6 +164,57 @@ $(document).ready(function() {
         trimValue: true,
         confirmKeys: [13, 44], // Enter and comma
         tagClass: 'badge bg-primary'
+    });
+
+    // Handle form submission
+    $('#resourceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        // Clear previous error messages
+        $('.error-message').remove();
+        
+        // Disable submit button to prevent double submission
+        $('#submitBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+        
+        // Get form data
+        var formData = $(this).serialize();
+        
+        // Submit form via AJAX
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    alert(response.message);
+                    // Redirect to saved resources page
+                    window.location.href = response.redirect_url;
+                } else {
+                    // Show error message
+                    alert(response.message || 'Error submitting resource. Please try again.');
+                    // Re-enable submit button
+                    $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Submit Resource');
+                }
+            },
+            error: function(xhr, status, error) {
+                // Re-enable submit button
+                $('#submitBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Submit Resource');
+                
+                // Parse error response
+                var response = xhr.responseJSON;
+                if (response && response.errors) {
+                    // Display field-specific errors
+                    Object.keys(response.errors).forEach(function(field) {
+                        var fieldElement = $('#id_' + field);
+                        fieldElement.after('<div class="error-message">' + response.errors[field].join(', ') + '</div>');
+                    });
+                }
+                
+                // Show general error message
+                alert(response ? response.message : 'Error submitting resource. Please try again.');
+            }
+        });
     });
 });
 </script>

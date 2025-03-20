@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.urls import reverse
 
 from django.db.models import Avg, Q, Count
 from .models import Resource, Category, Comment, Rating, VideoResource
@@ -133,15 +134,44 @@ def resource_create(request):
     if request.method == 'POST':
         form = ResourceForm(request.POST)
         if form.is_valid():
-            resource = form.save(commit=False)
-            resource.author = request.user
-            # Explicitly set approval status - new resources need admin review
-            resource.is_approved = False
-            resource.is_rejected = False
-            resource.save()
-            form.save_m2m()  # Save tags
-            messages.success(request, 'Resource submitted successfully! It will be reviewed by moderators.')
-            return redirect('resources:resource_detail', pk=resource.pk)
+            try:
+                # Create the resource but don't save it yet
+                resource = form.save(commit=False)
+                resource.author = request.user
+                resource.is_approved = False
+                resource.is_rejected = False
+                
+                # Save the resource first
+                resource.save()
+                
+                # Now save the many-to-many relationships (tags)
+                form.save_m2m()
+                
+                # Add to user's saved resources
+                request.user.saved_resources.add(resource)
+                
+                messages.success(request, 'Resource submitted successfully! It will be reviewed by moderators.')
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Resource submitted successfully!',
+                    'redirect_url': reverse('resources:saved_resources')
+                })
+            except Exception as e:
+                messages.error(request, f'Error saving resource: {str(e)}')
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error saving resource: {str(e)}'
+                }, status=400)
+        else:
+            # Form is invalid, return errors
+            errors = {}
+            for field, field_errors in form.errors.items():
+                errors[field] = field_errors
+            return JsonResponse({
+                'success': False,
+                'message': 'Please correct the errors below.',
+                'errors': errors
+            }, status=400)
     else:
         form = ResourceForm()
     
@@ -296,17 +326,13 @@ def saved_resources(request):
 def admin_approval(request):
     # Count resources by status
     pending_count = Resource.objects.filter(is_approved=False, is_rejected=False).count()
-    approved_count = Resource.objects.filter(is_approved=True).count()
     rejected_count = Resource.objects.filter(is_rejected=True).count()
-    total_count = Resource.objects.count()
     
     # Check if JSON format is requested (for admin dashboard)
     if request.GET.get('format') == 'json':
         return JsonResponse({
             'pending_count': pending_count,
-            'approved_count': approved_count,
             'rejected_count': rejected_count,
-            'total_count': total_count,
         })
     
     filter_type = request.GET.get('filter', 'pending')
@@ -314,15 +340,12 @@ def admin_approval(request):
     if filter_type == 'pending':
         resources = Resource.objects.filter(is_approved=False, is_rejected=False)
         filter_message = "Showing pending resources awaiting review"
-    elif filter_type == 'approved':
-        resources = Resource.objects.filter(is_approved=True)
-        filter_message = "Showing approved resources"
     elif filter_type == 'rejected':
         resources = Resource.objects.filter(is_rejected=True)
         filter_message = "Showing rejected resources"
-    else:  # 'all' filter or any other value
-        resources = Resource.objects.all()
-        filter_message = "Showing all resources"
+    else:  # Default to pending
+        resources = Resource.objects.filter(is_approved=False, is_rejected=False)
+        filter_message = "Showing pending resources awaiting review"
     
     # Sort by newest first
     resources = resources.order_by('-created_at')
@@ -338,9 +361,7 @@ def admin_approval(request):
     context = {
         'resources': resources,
         'pending_count': pending_count,
-        'approved_count': approved_count,
         'rejected_count': rejected_count,
-        'total_count': total_count,
         'filter': filter_type,
         'filter_message': filter_message,
         'is_paginated': paginator.num_pages > 1,
