@@ -13,7 +13,7 @@ def is_admin(user):
 
 def home(request):
     featured_resources = Resource.objects.filter(is_approved=True).order_by('-views')[:6]
-    categories = Category.objects.all()
+    categories = Category.objects.filter(name__in=['Artificial Intelligence', 'Machine Learning'])
     latest_resources = Resource.objects.filter(is_approved=True).order_by('-created_at')[:6]
     
     context = {
@@ -72,13 +72,16 @@ def resource_list(request):
     except:
         resources = paginator.page(1)
     
-    # Get all categories and resource types for the filter form
-    categories = Category.objects.all()
+    # Get only AI and ML categories for the filter form
+    categories = Category.objects.filter(name__in=['Artificial Intelligence', 'Machine Learning'])
+    
+    # Get all resource types except github
+    resource_types = [rt for rt in Resource.RESOURCE_TYPES if rt[0] != 'github']
     
     context = {
         'resources': resources,
         'categories': categories,
-        'resource_types': Resource.RESOURCE_TYPES,
+        'resource_types': resource_types,
         'current_type': resource_type,
         'current_category': category_id,
         'current_sort': sort_by,
@@ -243,7 +246,7 @@ def save_resource(request, pk):
     return JsonResponse({'saved': saved})
 
 def category_list(request):
-    categories = Category.objects.all()
+    categories = Category.objects.filter(name__in=['Artificial Intelligence', 'Machine Learning'])
     return render(request, 'resources/category_list.html', {'categories': categories})
 
 def category_detail(request, slug):
@@ -403,8 +406,8 @@ def video_resources(request):
     except:
         videos = paginator.page(1)
     
-    # Get all categories and video platforms for the filter form
-    categories = Category.objects.all()
+    # Get only AI and ML categories for the filter form
+    categories = Category.objects.filter(name__in=['Artificial Intelligence', 'Machine Learning'])
     
     context = {
         'videos': videos,

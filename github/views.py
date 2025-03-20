@@ -113,6 +113,9 @@ def repo_detail(request, pk):
     # Get average rating
     avg_rating = repo.ratings.aggregate(Avg('rating'))['rating__avg']
     
+    repo.views += 1
+    repo.save()
+    
     context = {
         'repo': repo,
         'comments': comments,

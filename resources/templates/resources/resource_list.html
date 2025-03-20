@@ -3,6 +3,10 @@
 
 {% block title %}Resources - AI Learning Hub{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/resources.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -17,16 +21,19 @@
     <div class="row">
         <!-- Filters Sidebar -->
         <div class="col-md-3">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Filter Resources</h5>
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Resources</h5>
                 </div>
                 <div class="card-body">
                     <form method="GET" id="filter-form">
                         <!-- Search -->
                         <div class="mb-3">
                             <label for="q" class="form-label">Search</label>
-                            <input type="text" class="form-control" id="q" name="q" value="{% if query and query != 'None' %}{{ query }}{% endif %}" placeholder="Search resources...">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="q" name="q" value="{% if query and query != 'None' %}{{ query }}{% endif %}" placeholder="Search resources...">
+                            </div>
                         </div>
 
                         <!-- Category Filter -->
@@ -84,143 +91,152 @@
         </div>
 
         <!-- Resources Grid -->
-        <div class="col-md-9">
-            {% if resources %}
-                <div class="row">
-                    {% for resource in resources %}
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <a href="{{ resource.url }}" class="text-decoration-none" target="_blank">
-                                            {{ resource.title }}
-                                        </a>
-                                    </h5>
-                                    <p class="card-text">{{ resource.description|truncatewords:30 }}</p>
-                                    
-                                    {% if resource.tags.all %}
-                                        <div class="mb-3">
-                                            {% for tag in resource.tags.all %}
-                                                <span class="badge bg-secondary">{{ tag.name }}</span>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    
-                                    <div class="meta-info">
-                                        <small class="text-muted">
-                                            <i class="fas fa-user"></i> {{ resource.author }}
-                                            <span class="mx-2">•</span>
-                                            <i class="fas fa-eye"></i> {{ resource.views }} views
-                                            {% if resource.rating %}
-                                                <span class="mx-2">•</span>
-                                                <i class="fas fa-star text-warning"></i> {{ resource.rating|floatformat:1 }}
-                                            {% endif %}
-                                        </small>
+        <div class="col-md-9 resources-grid">
+            <div class="resources-container mb-4">
+                {% if resources %}
+                    <div class="row">
+                        {% for resource in resources %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card resource-card h-100">
+                                    <div class="resource-type {{ resource.resource_type }}">
+                                        {{ resource.get_resource_type_display }}
                                     </div>
-                                </div>
-                                <div class="card-footer bg-transparent">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            Added {{ resource.created_at|timesince }} ago
-                                        </small>
-                                        <div class="d-flex align-items-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <a href="{{ resource.url }}" target="_blank">
+                                                {{ resource.title }}
+                                            </a>
+                                        </h5>
+                                        <p class="card-text">{{ resource.description|truncatewords:30 }}</p>
+                                        
+                                        {% if resource.tags.all %}
+                                            <div class="mb-3">
+                                                {% for tag in resource.tags.all %}
+                                                    <span class="badge">{{ tag.name }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="meta-info">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-user me-2"></i> 
+                                                <span>{{ resource.author }}</span>
+                                            </div>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-eye me-2"></i> 
+                                                <span>{{ resource.views }} views</span>
+                                                
+                                                {% if resource.avg_rating %}
+                                                    <span class="mx-2">•</span>
+                                                    <i class="fas fa-star text-warning me-1"></i> 
+                                                    <span>{{ resource.avg_rating|floatformat:1 }}</span>
+                                                {% endif %}
+                                                
+                                                <span class="mx-2">•</span>
+                                                <i class="fas fa-folder me-1"></i> 
+                                                <span>{{ resource.category.name }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small>
+                                                Added {{ resource.created_at|timesince }} ago
+                                            </small>
                                             {% if user.is_authenticated %}
-                                                <button class="btn btn-sm btn-outline-primary save-resource-btn me-2" 
+                                                <button class="btn btn-sm btn-outline-primary save-resource-btn" 
                                                         data-resource-id="{{ resource.id }}"
                                                         data-saved="{% if resource in user.saved_resources.all %}true{% else %}false{% endif %}">
-                                                    <i class="fas {% if resource in user.saved_resources.all %}fa-bookmark{% else %}fa-bookmark-o{% endif %}"></i>
+                                                    <i class="{% if resource in user.saved_resources.all %}fas fa-bookmark{% else %}far fa-bookmark{% endif %}"></i>
                                                     <span class="save-text">
                                                         {% if resource in user.saved_resources.all %}Saved{% else %}Save{% endif %}
                                                     </span>
                                                 </button>
                                             {% endif %}
-                                            <small class="text-muted">
-                                                <i class="fas fa-folder"></i> {{ resource.category.name }}
-                                            </small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                </div>
+                        {% endfor %}
+                    </div>
 
-                <!-- Pagination -->
-                {% if is_paginated %}
-                    <nav aria-label="Resource pages" class="mt-4">
-                        <ul class="pagination justify-content-center">
-                            {% if page_obj.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        <i class="fas fa-angle-double-left"></i>
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        <i class="fas fa-angle-left"></i>
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-angle-left"></i></span>
-                                </li>
-                            {% endif %}
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Resource pages" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            <i class="fas fa-angle-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            <i class="fas fa-angle-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fas fa-angle-double-left"></i></span>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fas fa-angle-left"></i></span>
+                                    </li>
+                                {% endif %}
 
-                            {% with ''|center:page_obj.paginator.num_pages as range %}
-                                {% for _ in range %}
-                                    {% with forloop.counter as i %}
-                                        {% if page_obj.number == i %}
-                                            <li class="page-item active d-none d-md-block">
-                                                <span class="page-link">{{ i }}</span>
-                                            </li>
-                                        {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
-                                            <li class="page-item d-none d-md-block">
-                                                <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                                    {{ i }}
-                                                </a>
-                                            </li>
-                                        {% endif %}
-                                    {% endwith %}
-                                {% endfor %}
-                            {% endwith %}
+                                {% with ''|center:page_obj.paginator.num_pages as range %}
+                                    {% for _ in range %}
+                                        {% with forloop.counter as i %}
+                                            {% if page_obj.number == i %}
+                                                <li class="page-item active d-none d-md-block">
+                                                    <span class="page-link">{{ i }}</span>
+                                                </li>
+                                            {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                                                <li class="page-item d-none d-md-block">
+                                                    <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                                        {{ i }}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endwith %}
 
-                            <li class="page-item disabled d-block d-md-none">
-                                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-                            </li>
+                                <li class="page-item disabled d-block d-md-none">
+                                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                                </li>
 
-                            {% if page_obj.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        <i class="fas fa-angle-right"></i>
-                                    </a>
-                                </li>
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
-                                        <i class="fas fa-angle-double-right"></i>
-                                    </a>
-                                </li>
-                            {% else %}
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-angle-right"></i></span>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                {% endif %}
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No resources found matching your criteria.
-                    {% if user.is_authenticated %}
-                        <a href="{% url 'resources:resource_create' %}" class="alert-link">Add a new resource!</a>
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.type %}&type={{ request.GET.type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fas fa-angle-right"></i></span>
+                                    </li>
+                                    <li class="page-item disabled">
+                                        <span class="page-link"><i class="fas fa-angle-double-right"></i></span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
                     {% endif %}
-                </div>
-            {% endif %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No resources found matching your criteria.
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'resources:resource_create' %}" class="alert-link">Add a new resource!</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -264,10 +280,10 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.saved) {
-                    btn.find('i').removeClass('fa-bookmark-o').addClass('fa-bookmark');
+                    btn.find('i').removeClass('far fa-bookmark').addClass('fas fa-bookmark');
                     btn.find('.save-text').text('Saved');
                 } else {
-                    btn.find('i').removeClass('fa-bookmark').addClass('fa-bookmark-o');
+                    btn.find('i').removeClass('fas fa-bookmark').addClass('far fa-bookmark');
                     btn.find('.save-text').text('Save');
                 }
                 btn.data('saved', response.saved);
