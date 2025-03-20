@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ repo.name }} - AI Learning Hub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>{{ repo.name }}</h1>
+    <p>{{ repo.description }}</p>
+    <p>Views: {{ repo.views }}</p>
+    <p>Stars: {{ repo.stars }}</p>
+    <p>Forks: {{ repo.forks }}</p>
+    <p>Language: {{ repo.language }}</p>
+    <p>Last Updated: {{ repo.last_updated }}</p>
+    <p>Average Rating: {{ avg_rating|default:"No ratings yet" }}</p>
+
+    <h2>Comments</h2>
+    {% for comment in comments %}
+        <div class="comment">
+            <p>{{ comment.content }}</p>
+            <small>By {{ comment.user.username }} on {{ comment.created_at }}</small>
+        </div>
+    {% empty %}
+        <p>No comments yet.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+        <h2>Add a Comment</h2>
+        <form method="post" action="{% url 'github:add_comment' repo.id %}">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+        <h2>Rate this Repository</h2>
+        <form method="post" action="{% url 'github:rate_repo' repo.id %}">
+            {% csrf_token %}
+            {{ rating_form.as_p }}
+            <button type="submit" class="btn btn-primary">Submit Rating</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %} 

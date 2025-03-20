@@ -14,6 +14,7 @@ class GitHubRepository(models.Model):
     last_updated = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     saved_by = models.ManyToManyField(User, related_name='saved_repos', blank=True)
+    views = models.PositiveIntegerField(default=0)
     
     class Meta:
         verbose_name_plural = "GitHub repositories"

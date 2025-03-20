@@ -1,7 +1,18 @@
 from django import forms
-from .models import Resource, Comment, Rating
+from .models import Resource, Comment, Rating, Category
 
 class ResourceForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Limit category choices to AI and ML
+        self.fields['category'].queryset = Category.objects.filter(
+            name__in=['Artificial Intelligence', 'Machine Learning']
+        )
+        # Remove 'github' from resource_type choices
+        self.fields['resource_type'].choices = [
+            choice for choice in Resource.RESOURCE_TYPES if choice[0] != 'github'
+        ]
+        
     class Meta:
         model = Resource
         fields = ['title', 'description', 'url', 'resource_type', 'category', 'tags']
