@@ -63,3 +63,33 @@ class Rating(models.Model):
     
     def __str__(self):
         return f'Rating {self.rating} by {self.user.username} on {self.resource.title}'
+
+class VideoResource(models.Model):
+    PLATFORMS = [
+        ('youtube', 'YouTube'),
+        ('coursera', 'Coursera'),
+        ('udemy', 'Udemy'),
+        ('edx', 'edX'),
+        ('other', 'Other'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    url = models.URLField()
+    platform = models.CharField(max_length=20, choices=PLATFORMS)
+    thumbnail_url = models.URLField(blank=True, null=True)
+    duration = models.CharField(max_length=50, blank=True, null=True)  # e.g., "2h 30m"
+    instructor = models.CharField(max_length=100, blank=True, null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='video_resources')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    tags = TaggableManager()
+    is_approved = models.BooleanField(default=False)
+    views = models.PositiveIntegerField(default=0)
+    likes = models.ManyToManyField(User, related_name='liked_videos', blank=True)
+    
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['-created_at']

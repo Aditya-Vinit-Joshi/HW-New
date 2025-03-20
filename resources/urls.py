@@ -18,8 +18,12 @@ urlpatterns = [
     path('categories/<slug:slug>/', views.category_detail, name='category_detail'),
     path('my-resources/', views.my_resources, name='my_resources'),
     path('saved-resources/', views.saved_resources, name='saved_resources'),
+
     # Admin approval URLs
     path('admin/resources/', views.admin_approval, name='admin_approval'),
     path('resources/<int:pk>/approve/', views.approve_resource, name='approve_resource'),
     path('resources/<int:pk>/reject/', views.reject_resource, name='reject_resource'),
+    path('videos/', views.video_resources, name='video_resources'),
+    path('like-video/<int:video_id>/', views.like_video, name='like_video'),
+
 ] 
