@@ -22,9 +22,14 @@ from resources.views import admin_approval
 from django.views.generic import TemplateView
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+
+def health_check(request):
+    return HttpResponse("OK")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check, name='health_check'),
     path('', include('resources.urls')),
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),
@@ -34,3 +39,6 @@ urlpatterns = [
     # Direct path to admin resources landing page
     path('admin-resources/', staff_member_required(TemplateView.as_view(template_name='admin_resources.html')), name='admin_resources'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
