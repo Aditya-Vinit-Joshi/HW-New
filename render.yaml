@@ -2,16 +2,25 @@ services:
   - type: web
     name: seekai
     env: python
-    buildCommand: "./build.sh"
+    rootDir: SeekAI
+    buildCommand: "sh build.sh"
     startCommand: "gunicorn SeekAI.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
-      - key: DATABASE_URL
-        value: postgresql://postgres:postgres@localhost:5432/seekai
+        value: 3.12.0
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_DEBUG
         value: false
       - key: WEB_CONCURRENCY
-        value: 4 
+        value: 4
+      - key: PYTHON_HASH_SEED
+        value: random
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com
+    autoDeploy: true
+
+  - type: postgresql
+    name: seekai-db
+    ipAllowList: []
+    plan: free 
