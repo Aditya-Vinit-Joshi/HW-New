@@ -49,6 +49,8 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 
 ## Database Schema
 
+<img src = "https://github.com/Aditya-Vinit-Joshi/SeekAI/blob/main/database_schema">
+
 ## Data Sourcing
 
 1. Research papers:
