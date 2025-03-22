@@ -27,20 +27,18 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 ### 4. User Features
 - Custom user profiles
 - Resource bookmarking
-- Category-based interests
-- Social interactions (likes, comments, ratings)
+- Category-based search
+
 
 ## Technical Stack
 
 ### Backend
-- Python 3.12+
-- Django 4.2
+- Python 3.10
+- Django 5.0.2
 - PostgreSQL
-- Redis (optional)
 
 ### Frontend
 - Bootstrap 5
-- Font Awesome
 - Custom CSS/JS
 
 ### AI Integration
@@ -85,20 +83,32 @@ Create `.env` file:
 ```env
 DEBUG=True
 DJANGO_SECRET_KEY=your-secret-key
-OPENAI_API_KEY=your-openai-api-key
 GITHUB_TOKEN=your-github-token
 GEMINI_API_KEY=your-gemini-api-key
+DATABASE_URL=database_url
+ALLOWED_MIGRATION="*"
 ```
 
 4. **Database Setup**
 ```bash
+
+This is to only be done, if you want to replicate the database on your local machine. Otherwise this step can be skipped.
+
 python manage.py makemigrations
 python manage.py migrate
-python manage.py load_json_data  # Load initial AI resources
+python manage.py load_json_data
+python manage.py generate_video_resources
+python manage.py load_video_resources
+python manage.py import_medium_csv
 ```
 
 5. **Create Admin User**
 ```bash
+
+This can only be done if the you are using your local database.
+In case of using the database the application is using, the user cannot create the superuser.
+For creation of any super user, please contact the GitHub Repository owner.
+
 python manage.py createsuperuser
 ```
 
@@ -175,12 +185,10 @@ The application is configured for deployment on Render:
 ## Development Guidelines
 
 1. **Code Style**
-   - Follow PEP 8
    - Use Django best practices
    - Document functions and classes
 
 2. **Testing**
-   - Write unit tests
    - Test database migrations
    - Check API integrations
 
