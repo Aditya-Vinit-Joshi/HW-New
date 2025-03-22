@@ -49,7 +49,21 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 
 ## Database Schema
 
+## Data Sourcing
 
+1. Research papers:
+- Extracted top-rated research papers in the field of AI/ML and ran migrations script
+
+2. Github Projects:
+- Sourced trending GitHub public repos and ran migrations script
+
+3. Blogs
+- Extracted medium and towards data science articles and ran migrations script
+
+4. Video Resources
+- Extracted YouTube, Coursera, EDX, and Udemy data science articles and ran migrations script
+
+These are extracted dataset and proves that the system can scale when real-time data is added in the future.
 
 ## Setup Instructions
 
@@ -117,7 +131,6 @@ SeekAI/
 - `/github/` - GitHub repositories
 - `/search/` - Search interface
 - `/accounts/profile/` - User profile
-- `/admin/` - Admin interface
 
 ## Deployment
 
@@ -148,8 +161,7 @@ The application is configured for deployment on Render:
    - Topic information
 
 2. **AI Services**
-   - OpenAI: Resource recommendations
-   - Gemini: Code analysis
+   - Gemini: Chat bot curated to answer queries on AI/ML
 
 ## Contributing
 
