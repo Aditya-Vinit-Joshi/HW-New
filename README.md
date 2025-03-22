@@ -42,7 +42,6 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 - Custom CSS/JS
 
 ### AI Integration
-- OpenAI API
 - Google Gemini API
 
 ## Database Schema
@@ -99,6 +98,7 @@ python manage.py migrate
 python manage.py load_json_data
 python manage.py generate_video_resources
 python manage.py load_video_resources
+
 python manage.py import_medium_csv
 ```
 
