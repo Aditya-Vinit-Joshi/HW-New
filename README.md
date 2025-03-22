@@ -36,7 +36,6 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 - Python 3.12+
 - Django 4.2
 - PostgreSQL
-- Redis (optional)
 
 ### Frontend
 - Bootstrap 5
@@ -44,7 +43,6 @@ SeekAI is an intelligent learning platform that aggregates and organizes AI/ML r
 - Custom CSS/JS
 
 ### AI Integration
-- OpenAI API
 - Google Gemini API
 
 ## Database Schema
@@ -94,7 +92,10 @@ GEMINI_API_KEY=your-gemini-api-key
 ```bash
 python manage.py makemigrations
 python manage.py migrate
-python manage.py load_json_data  # Load initial AI resources
+python manage.py load_json_data
+python manage.py generate_video_resources
+python manage.py load_youtube_resources
+python manage.py import_medium_csv
 ```
 
 5. **Create Admin User**
