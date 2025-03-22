@@ -1,6 +1,6 @@
 # AI Learning Hub
 
-A comprehensive platform for discovering and learning about AI resources, tutorials, and research materials.
+A comprehensive platform for discovering and learning about AI resources, tutorials, and research materials. The website can have some performance delays since it is hosted on a free hosting platform on render.com
 
 ## Features
 
