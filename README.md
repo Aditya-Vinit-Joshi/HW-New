@@ -20,14 +20,17 @@ Create a `.env` file in the root directory:
 ```env
 DEBUG=True
 DJANGO_SECRET_KEY=your-secret-key
-OPENAI_API_KEY=your-openai-api-key
-GITHUB_TOKEN=your-github-token
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
 4. **Run migrations:**
 ```bash
+python manage.py makemigrations
 python manage.py migrate
+python manage.py load_json_data
+python manage.py generate_youtube_resources
+python manage.py load_video_resources
+python manage.py import_medium_csv
 ```
 
 5. **Create a superuser:**
@@ -47,7 +50,7 @@ python manage.py runserver
 - `resources/` - AI learning resources management
 - `search/` - Advanced search functionality
 - `chatbot/` - AI-powered chatbot
-- `github/` - GitHub repository integration
+- `github/` - GitHub trending repository 
 - `templates/` - HTML templates
 - `static/` - Static files (CSS, JS, images)
 
@@ -68,12 +71,9 @@ Resource:
 - url (varchar): Link to resource
 - resource_type (enum): [research, github, blog, other]
 - category (enum): [AI, ML]
-- difficulty_level (enum): [beginner, intermediate, advanced]
 - created_at (timestamp)
-- updated_at (timestamp)
 - author (FK -> User)
 - tags (M2M -> Tag)
-- avg_rating (float): Computed field
 ```
 
 ### User Interactions
@@ -83,7 +83,6 @@ UserBookmark:
 - user (FK -> User)
 - resource (FK -> Resource)
 - created_at (timestamp)
-- notes (text): Optional user notes
 
 UserProgress:
 - id (UUID): Primary key
@@ -136,27 +135,22 @@ UserContribution:
 ### Getting Started
 
 1. **Account Creation & Login**
-   - Sign up using email or GitHub account
-   - Complete your profile with interests and expertise level
-   - Set learning preferences and goals
+   - Sign up using email and password
 
 2. **Resource Discovery**
    - Browse curated AI/ML resources by category
    - Filter by type (research papers, GitHub repos, blog posts)
-   - Sort by difficulty level, rating, or popularity
+   - Sort by views, last updated, alphabetical order and forks(for github repos).
    - Use advanced search with tags and keywords
 
 3. **Learning Management**
    - Bookmark interesting resources for later
-   - Track progress on resources you're studying
-   - Rate and review completed resources
-   - Add personal notes to bookmarked items
 
 4. **AI Assistant Integration**
    - Access the AI chatbot for learning support
-   - Get personalized resource recommendations
    - Ask questions about specific topics
    - Receive explanations and clarifications
+   - Curated only for AI/ML related queries
 
 ### Resource Types
 
@@ -186,79 +180,223 @@ The platform includes an AI-powered chatbot that provides:
 
 1. **Learning Support**
    - Concept explanations
-   - Code debugging help
-   - Implementation guidance
    - Resource recommendations
 
 2. **Interactive Features**
    - Context-aware responses
-   - Code completion suggestions
-   - Natural language processing
    - Multi-turn conversations
 
 3. **Personalization**
-   - Adapts to user's skill level
    - Remembers previous interactions
    - Provides tailored recommendations
-   - Tracks learning progress
 
-### User Contributions
+## Deployment
 
-Community members can enhance the platform through:
+The application is configured for deployment on Render:
+- PostgreSQL database
+- WhiteNoise for static files
+- Gunicorn web server
+- Environment variable configuration
+- Health check endpoint
 
-1. **Resource Submissions**
-   - Submit new AI/ML resources
-   - Provide descriptions and metadata
-   - Tag with relevant topics
-   - Set difficulty levels
+## User Contributions
 
-2. **Quality Control**
-   - Community voting system
-   - Expert review process
-   - Content moderation
-   - Version tracking
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-3. **Collaborative Features**
-   - Discussion threads
-   - Resource annotations
-   - Error reporting
-   - Content improvements
-
-## Best Practices
-
-1. **Resource Organization**
-   - Use clear, descriptive titles
-   - Add relevant tags
-   - Provide comprehensive descriptions
-   - Include prerequisites
-
-2. **Learning Path**
-   - Start with foundational resources
-   - Progress systematically
-   - Complete hands-on exercises
-   - Participate in discussions
-
-3. **Contribution Guidelines**
-   - Follow submission templates
-   - Provide accurate metadata
-   - Include source references
-   - Maintain quality standards
-
-## Technical Requirements
-
-- Modern web browser
-- GitHub account (optional)
-- Basic understanding of AI/ML concepts
-- Internet connection for AI features
-
-## Support
-
-For technical support or questions:
-- Use the AI chatbot
-- Contact platform administrators
-- Check documentation
-- Join community discussions
+This platform is continuously evolving with new features and improvements. User feedback and contributions are welcome to enhance the learning experience for everyone. 
 
 ---
 
 This platform is continuously evolving with new features and improvements. User feedback and contributions are welcome to enhance the learning experience for everyone. 
+
+
+
+# SeekAI Platform
+
+SeekAI is an intelligent learning platform that aggregates and organizes AI/ML resources, featuring GitHub repository integration and AI-powered search capabilities.
+
+## Features
+
+### 1. Resource Management
+- Browse AI and Machine Learning resources
+- Resource types: Research Papers, GitHub Repositories, Blog Posts
+- View tracking and like system
+- Tag-based organization using django-taggit
+- Admin approval workflow for new submissions
+
+### 2. GitHub Integration
+- Curated AI/ML trending repository listing
+- Topic-based filtering
+- Repository comments and ratings
+- Sort repos based on 
+- Save favorite repositories
+
+### 3. Search Capabilities
+- Full-text search across resources
+- Filter by resource type and category
+- Sort by various criteria (views, date, rating)
+- Advanced search with multiple filters
+
+### 4. User Features
+- Custom user profiles
+- Resource bookmarking
+- Category-based interests
+- Social interactions (likes, comments, ratings)
+
+## Technical Stack
+
+### Backend
+- Python 3.12+
+- Django 4.2
+- PostgreSQL
+- Redis (optional)
+
+### Frontend
+- Bootstrap 5
+- Font Awesome
+- Custom CSS/JS
+
+### AI Integration
+- OpenAI API
+- Google Gemini API
+
+## Database Schema
+
+
+
+## Setup Instructions
+
+1. **Create Virtual Environment**
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. **Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Environment Configuration**
+Create `.env` file:
+```env
+DEBUG=True
+DJANGO_SECRET_KEY=your-secret-key
+OPENAI_API_KEY=your-openai-api-key
+GITHUB_TOKEN=your-github-token
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+4. **Database Setup**
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py load_json_data  # Load initial AI resources
+```
+
+5. **Create Admin User**
+```bash
+python manage.py createsuperuser
+```
+
+6. **Run Development Server**
+```bash
+python manage.py runserver
+```
+
+## Project Structure
+
+```
+SeekAI/
+├── ai_learning_hub/     # Project settings
+├── accounts/           # User authentication
+│   ├── models.py       # CustomUser model
+│   └── views.py        # Auth views
+├── resources/          # Core resource management
+│   ├── models.py       # Resource models
+│   └── views.py        # Resource views
+├── github/            # GitHub integration
+│   ├── models.py      # Repository models
+│   └── views.py       # GitHub views
+├── search/            # Search functionality
+├── static/            # Static files
+└── templates/         # HTML templates
+```
+
+## Key URLs
+
+- `/` - Home page with featured resources
+- `/resources/` - Resource listing
+- `/github/` - GitHub repositories
+- `/search/` - Search interface
+- `/accounts/profile/` - User profile
+- `/admin/` - Admin interface
+
+## Deployment
+
+The application is configured for deployment on Render:
+
+1. **Database**
+   - PostgreSQL database service
+   - Connection via DATABASE_URL
+
+2. **Web Service**
+   - Python runtime
+   - Build command: `./build.sh`
+   - Start command: `gunicorn ai_learning_hub.wsgi:application`
+
+3. **Static Files**
+   - Served via WhiteNoise
+   - Collected to `staticfiles/`
+
+4. **Environment Variables**
+   - Configure in Render dashboard
+   - Include all API keys and secrets
+
+## API Integrations
+
+1. **GitHub API**
+   - Repository data fetching
+   - Star and fork counts
+   - Topic information
+
+2. **AI Services**
+   - OpenAI: Resource recommendations
+   - Gemini: Code analysis
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make changes
+4. Submit a pull request
+
+## Development Guidelines
+
+1. **Code Style**
+   - Follow PEP 8
+   - Use Django best practices
+   - Document functions and classes
+
+2. **Testing**
+   - Write unit tests
+   - Test database migrations
+   - Check API integrations
+
+3. **Security**
+   - Keep API keys secure
+   - Validate user input
+   - Use HTTPS in production
+
+## Support
+
+- GitHub Issues
+- Documentation
+- Admin Contact
+
+---
+
+This platform is actively maintained and improved. Contributions and feedback are welcome. 
